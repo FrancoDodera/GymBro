@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import SessionTimer from '../../components/SessionTimer';
 import { useAuth } from '../../contexts/AuthContext';
 import { clienteService } from '../../api/directus';
 
@@ -11,6 +12,8 @@ const SessionRegistration = () => {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [inputMode, setInputMode] = useState('manual'); // 'manual' or 'timer'
+    const [timerHours, setTimerHours] = useState(0);
     const [formData, setFormData] = useState({
         fecha: new Date().toISOString().split('T')[0],
         horas_entrenadas: '',
@@ -44,23 +47,28 @@ const SessionRegistration = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Determine which hours value to use
+        const hoursToSave = inputMode === 'timer' ? timerHours : parseFloat(formData.horas_entrenadas);
+
+        // Validation
+        if (!hoursToSave || hoursToSave <= 0) {
+            alert('Debes registrar al menos 1 minuto de entrenamiento');
+            return;
+        }
+
         setSaving(true);
 
         try {
             await clienteService.createSession({
                 cliente_id: profile.id,
                 ...formData,
-                horas_entrenadas: parseFloat(formData.horas_entrenadas)
+                horas_entrenadas: hoursToSave
             });
 
             setShowCreateModal(false);
             setShowSuccessModal(true);
-            setFormData({
-                fecha: new Date().toISOString().split('T')[0],
-                horas_entrenadas: '',
-                tipo_entrenamiento: 'pesas',
-                notas: ''
-            });
+            resetForm();
             loadSessions();
         } catch (error) {
             console.error('Error creating session:', error);
@@ -68,6 +76,25 @@ const SessionRegistration = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            fecha: new Date().toISOString().split('T')[0],
+            horas_entrenadas: '',
+            tipo_entrenamiento: 'pesas',
+            notas: ''
+        });
+        setInputMode('manual');
+        setTimerHours(0);
+    };
+
+    const handleTimerComplete = (hours) => {
+        setTimerHours(hours);
+    };
+
+    const handleTimerChange = (hours) => {
+        setTimerHours(hours);
     };
 
     const getTipoInfo = (tipo) => {
@@ -208,7 +235,71 @@ const SessionRegistration = () => {
             >
                 <form onSubmit={handleSubmit}>
                     <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* Mode Toggle */}
+                        <div className="flex gap-2 p-1 bg-dark-800 rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('manual')}
+                                className={`flex-1 py-2 px-4 rounded-md transition-all text-sm font-medium ${inputMode === 'manual'
+                                        ? 'bg-primary-600 text-white'
+                                        : 'text-gray-400 hover:text-white'
+                                    }`}
+                            >
+                                ✏️ Manual
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setInputMode('timer')}
+                                className={`flex-1 py-2 px-4 rounded-md transition-all text-sm font-medium ${inputMode === 'timer'
+                                        ? 'bg-primary-600 text-white'
+                                        : 'text-gray-400 hover:text-white'
+                                    }`}
+                            >
+                                ⏱️ Cronómetro
+                            </button>
+                        </div>
+
+                        {/* Timer Mode */}
+                        {inputMode === 'timer' && (
+                            <SessionTimer
+                                onTimeChange={handleTimerChange}
+                                onComplete={handleTimerComplete}
+                            />
+                        )}
+
+                        {/* Manual Mode */}
+                        {inputMode === 'manual' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="label">Fecha</label>
+                                    <input
+                                        type="date"
+                                        className="input"
+                                        value={formData.fecha}
+                                        onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="label">Horas Entrenadas</label>
+                                    <input
+                                        type="number"
+                                        step="0.5"
+                                        min="0.5"
+                                        max="12"
+                                        className="input"
+                                        placeholder="1.5"
+                                        value={formData.horas_entrenadas}
+                                        onChange={(e) => setFormData({ ...formData, horas_entrenadas: e.target.value })}
+                                        required={inputMode === 'manual'}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Common Fields - Fecha for Timer Mode */}
+                        {inputMode === 'timer' && (
                             <div>
                                 <label className="label">Fecha</label>
                                 <input
@@ -220,21 +311,7 @@ const SessionRegistration = () => {
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="label">Horas Entrenadas</label>
-                                <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0.5"
-                                    max="12"
-                                    className="input"
-                                    placeholder="1.5"
-                                    value={formData.horas_entrenadas}
-                                    onChange={(e) => setFormData({ ...formData, horas_entrenadas: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        </div>
+                        )}
 
                         <div>
                             <label className="label">Tipo de Entrenamiento</label>

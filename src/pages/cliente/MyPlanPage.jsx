@@ -122,8 +122,10 @@ const MyPlanPage = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {ejercicios.map((item, idx) => {
-                        const ejercicio = item.ejercicio_id;
-                        if (!ejercicio) return null;
+                        // Support both structures:
+                        // 1. ejercicio_id reference (normalized)
+                        // 2. Data directly in junction table (denormalized)
+                        const ejercicio = item.ejercicio_id || item;
 
                         const hasImage = ejercicio.imagen_referencia;
                         const hasVideo = ejercicio.video_referencia;
