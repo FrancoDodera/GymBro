@@ -43,7 +43,6 @@ export default defineConfig({
                         src: '/icons/icon-512x512.png',
                         sizes: '512x512',
                         type: 'image/png',
-                        form_factor: 'wide',
                         label: 'Gym Bro Desktop'
                     },
                     {
