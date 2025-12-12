@@ -615,28 +615,39 @@ export const planesService = {
             // Then create exercises linked to the plan
             for (let i = 0; i < ejercicios.length; i++) {
                 const ej = ejercicios[i];
-                const exerciseData = {
-                    plan_id: plan.id,
-                    series: ej.series,
-                    repeticiones: ej.repeticiones,
-                    duracion_minutos: ej.duracion_minutos,
-                    orden: i
-                };
+                let ejercicioId;
 
-                // If it's a library exercise, link to existing ejercicio
+                // If it's a library exercise, use existing ejercicio_id
                 if (ej.mode === 'library' && ej.ejercicio_id) {
-                    exerciseData.ejercicio_id = ej.ejercicio_id;
+                    ejercicioId = ej.ejercicio_id;
                 } else {
-                    // Adhoc exercise - include name, description and image
-                    exerciseData.nombre = ej.nombre;
-                    exerciseData.descripcion = ej.descripcion;
-                    if (ej.imagen_referencia) {
-                        exerciseData.imagen_referencia = ej.imagen_referencia;
-                    }
+                    // Ad-hoc exercise: create in ejercicios table first
+                    const nuevoEjercicio = await client.request(
+                        createItem('ejercicios', {
+                            nombre: ej.nombre,
+                            descripcion: ej.descripcion || '',
+                            categoria: ej.categoria || 'general',
+                            nivel_dificultad: ej.nivel_dificultad || 'intermedio',
+                            grupo_muscular: ej.grupo_muscular || null,
+                            imagen_referencia: ej.imagen_referencia || null,
+                            video_referencia: ej.video_referencia || null,
+                            instrucciones: ej.instrucciones || ''
+                        })
+                    );
+                    ejercicioId = nuevoEjercicio.id;
                 }
 
+                // Now create the junction record with only metadata
                 await client.request(
-                    createItem('ejercicios_plan', exerciseData)
+                    createItem('ejercicios_plan', {
+                        plan_id: plan.id,
+                        ejercicio_id: ejercicioId,
+                        series: ej.series,
+                        repeticiones: ej.repeticiones,
+                        duracion_minutos: ej.duracion_minutos,
+                        orden: i,
+                        notas: ej.notas || null
+                    })
                 );
             }
 
@@ -671,28 +682,39 @@ export const planesService = {
             // Create new exercises
             for (let i = 0; i < ejercicios.length; i++) {
                 const ej = ejercicios[i];
-                const exerciseData = {
-                    plan_id: parseInt(planId),
-                    series: ej.series,
-                    repeticiones: ej.repeticiones,
-                    duracion_minutos: ej.duracion_minutos,
-                    orden: i
-                };
+                let ejercicioId;
 
-                // If it's a library exercise, link to existing ejercicio
+                // If it's a library exercise, use existing ejercicio_id
                 if (ej.mode === 'library' && ej.ejercicio_id) {
-                    exerciseData.ejercicio_id = ej.ejercicio_id;
+                    ejercicioId = ej.ejercicio_id;
                 } else {
-                    // Adhoc exercise - include name, description and image
-                    exerciseData.nombre = ej.nombre;
-                    exerciseData.descripcion = ej.descripcion;
-                    if (ej.imagen_referencia) {
-                        exerciseData.imagen_referencia = ej.imagen_referencia;
-                    }
+                    // Ad-hoc exercise: create in ejercicios table first
+                    const nuevoEjercicio = await client.request(
+                        createItem('ejercicios', {
+                            nombre: ej.nombre,
+                            descripcion: ej.descripcion || '',
+                            categoria: ej.categoria || 'general',
+                            nivel_dificultad: ej.nivel_dificultad || 'intermedio',
+                            grupo_muscular: ej.grupo_muscular || null,
+                            imagen_referencia: ej.imagen_referencia || null,
+                            video_referencia: ej.video_referencia || null,
+                            instrucciones: ej.instrucciones || ''
+                        })
+                    );
+                    ejercicioId = nuevoEjercicio.id;
                 }
 
+                // Now create the junction record with only metadata
                 await client.request(
-                    createItem('ejercicios_plan', exerciseData)
+                    createItem('ejercicios_plan', {
+                        plan_id: parseInt(planId),
+                        ejercicio_id: ejercicioId,
+                        series: ej.series,
+                        repeticiones: ej.repeticiones,
+                        duracion_minutos: ej.duracion_minutos,
+                        orden: i,
+                        notas: ej.notas || null
+                    })
                 );
             }
 
@@ -754,7 +776,16 @@ export const suscripcionService = {
                         cliente_id: { _eq: clienteId },
                         habilitado: { _eq: true }
                     },
-                    fields: ['*', 'plan_id.*', 'plan_id.ejercicios.*', 'plan_id.ejercicios.ejercicio_id.*'],
+                    fields: [
+                        '*',
+                        'plan_id.*',
+                        'plan_id.ejercicios.*',
+                        'plan_id.ejercicios.imagen_referencia.*',
+                        'plan_id.ejercicios.video_referencia.*',
+                        'plan_id.ejercicios.ejercicio_id.*',
+                        'plan_id.ejercicios.ejercicio_id.imagen_referencia.*',
+                        'plan_id.ejercicios.ejercicio_id.video_referencia.*'
+                    ],
                     sort: ['-fecha_inicio'],
                     limit: 1
                 })
