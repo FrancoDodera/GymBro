@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import LoadingSpinner from './components/LoadingSpinner';
+import InstallButton from './components/InstallButton';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -88,6 +89,7 @@ const Router = () => {
         <div className="min-h-screen bg-dark-900 pb-20 md:pb-0">
             {isAuthenticated && <Navbar />}
             {isAuthenticated && <BottomNav />}
+            <InstallButton />
 
             <Routes>
                 {/* Public Routes */}
