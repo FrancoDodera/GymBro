@@ -22,18 +22,35 @@ export default defineConfig({
                     {
                         src: '/icons/icon-192x192.png',
                         sizes: '192x192',
-                        type: 'image/png'
-                    },
-                    {
-                        src: '/icons/icon-512x512.png',
-                        sizes: '512x512',
-                        type: 'image/png'
+                        type: 'image/png',
+                        purpose: 'any'
                     },
                     {
                         src: '/icons/icon-512x512.png',
                         sizes: '512x512',
                         type: 'image/png',
-                        purpose: 'any maskable'
+                        purpose: 'any'
+                    },
+                    {
+                        src: '/icons/icon-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        purpose: 'maskable'
+                    }
+                ],
+                screenshots: [
+                    {
+                        src: '/icons/icon-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        form_factor: 'wide',
+                        label: 'Gym Bro Desktop'
+                    },
+                    {
+                        src: '/icons/icon-512x512.png',
+                        sizes: '512x512',
+                        type: 'image/png',
+                        label: 'Gym Bro Mobile'
                     }
                 ]
             },
@@ -41,7 +58,7 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                 runtimeCaching: [
                     {
-                        urlPattern: /^https:\/\/.*\.railway\.app\/.*$/,
+                        urlPattern: /^https:\/\/.*\.onrender\.com\/.*$/,
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'directus-api-cache',
