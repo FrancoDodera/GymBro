@@ -6,14 +6,20 @@ const InstallButton = () => {
     const [isInstalled, setIsInstalled] = useState(false);
 
     useEffect(() => {
+        console.log('[InstallButton] Component mounted');
+
         // Check if already installed
         if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('[InstallButton] App is already installed');
             setIsInstalled(true);
             return;
         }
 
+        console.log('[InstallButton] Waiting for beforeinstallprompt event...');
+
         // Listen for the install prompt
         const handleBeforeInstallPrompt = (e) => {
+            console.log('[InstallButton] beforeinstallprompt event fired!', e);
             e.preventDefault();
             setDeferredPrompt(e);
             setIsVisible(true);
@@ -21,6 +27,7 @@ const InstallButton = () => {
 
         // Listen for successful install
         const handleAppInstalled = () => {
+            console.log('[InstallButton] App installed successfully!');
             setIsInstalled(true);
             setIsVisible(false);
             setDeferredPrompt(null);
