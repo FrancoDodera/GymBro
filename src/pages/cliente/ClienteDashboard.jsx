@@ -1,10 +1,13 @@
 import { React, useState, useEffect } from 'react';
 import Card from '../../components/Card';
+import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../contexts/AuthContext';
 import { clienteService, suscripcionService } from '../../api/directus';
 import { calculateStreak, getMotivationalMessage, getWeeklyStats } from '../../utils/helpers';
 import ProgressChart from '../../components/ProgressChart';
+
+const directusUrl = import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055';
 
 const ClienteDashboard = () => {
     const { profile, user } = useAuth();
@@ -12,6 +15,8 @@ const ClienteDashboard = () => {
     const [subscription, setSubscription] = useState(null);
     const [loading, setLoading] = useState(true);
     const [streak, setStreak] = useState(0);
+    const [selectedExercise, setSelectedExercise] = useState(null);
+    const [showExerciseModal, setShowExerciseModal] = useState(false);
 
     useEffect(() => {
         if (profile) {
@@ -156,62 +161,65 @@ const ClienteDashboard = () => {
                         {subscription.plan_id.descripcion && (
                             <p className="text-gray-400">{subscription.plan_id.descripcion}</p>
                         )}
+                        <p className="text-sm text-gray-500 mt-2">Tnes que entrenar!</p>
                     </div>
 
                     {subscription.plan_id.ejercicios && subscription.plan_id.ejercicios.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {subscription.plan_id.ejercicios
                                 .sort((a, b) => (a.orden || 0) - (b.orden || 0))
-                                .map((ejercicio, index) => (
-                                    <div
-                                        key={ejercicio.id}
-                                        className="bg-dark-700 rounded-lg p-4 border border-dark-600 hover:border-primary-500 transition-all"
-                                    >
-                                        <div className="flex items-start justify-between mb-3">
-                                            <h4 className="font-semibold text-lg flex-1">{ejercicio.nombre}</h4>
-                                            <span className="badge badge-secondary text-xs ml-2">
-                                                #{ejercicio.orden || index + 1}
-                                            </span>
-                                        </div>
+                                .map((ejercicioPlan, index) => {
+                                    // Get exercise data from ejercicio_id or fallback to plan data
+                                    const ejercicio = ejercicioPlan.ejercicio_id || ejercicioPlan;
+                                    const nombre = ejercicio.nombre || `Ejercicio ${index + 1}`;
+                                    const imagen = ejercicio.imagen_url_1 || ejercicio.imagen_referencia;
 
-                                        <div className="space-y-2 mb-3">
-                                            {ejercicio.series && (
-                                                <div className="flex items-center text-sm">
-                                                    <span className="text-gray-400 w-20">Series:</span>
-                                                    <span className="font-medium text-primary-400">{ejercicio.series}</span>
+                                    return (
+                                        <div
+                                            key={ejercicioPlan.id || index}
+                                            onClick={() => {
+                                                setSelectedExercise({ ...ejercicio, planData: ejercicioPlan });
+                                                setShowExerciseModal(true);
+                                            }}
+                                            className="bg-dark-700 rounded-lg overflow-hidden border border-dark-600 hover:border-primary-500 transition-all cursor-pointer hover:scale-[1.02]"
+                                        >
+                                            {/* Image Thumbnail */}
+                                            {imagen && (
+                                                <div className="relative h-32 bg-dark-800">
+                                                    <img
+                                                        src={imagen}
+                                                        alt={nombre}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute top-2 right-2">
+                                                        <span className="badge badge-secondary text-xs">
+                                                            #{ejercicioPlan.orden ?? index + 1}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             )}
-                                            {ejercicio.repeticiones && (
-                                                <div className="flex items-center text-sm">
-                                                    <span className="text-gray-400 w-20">Reps:</span>
-                                                    <span className="font-medium text-accent-400">{ejercicio.repeticiones}</span>
-                                                </div>
-                                            )}
-                                            {ejercicio.duracion_minutos && (
-                                                <div className="flex items-center text-sm">
-                                                    <span className="text-gray-400 w-20">Duración:</span>
-                                                    <span className="font-medium text-green-400">{ejercicio.duracion_minutos} min</span>
-                                                </div>
-                                            )}
-                                        </div>
 
-                                        {ejercicio.descripcion && (
-                                            <p className="text-sm text-gray-500 line-clamp-3 mb-3">
-                                                {ejercicio.descripcion}
-                                            </p>
-                                        )}
+                                            <div className="p-4">
+                                                <h4 className="font-semibold text-lg mb-3">{nombre}</h4>
 
-                                        {ejercicio.ejercicio_id?.imagen_referencia && (
-                                            <div className="mt-3">
-                                                <img
-                                                    src={`${import.meta.env.VITE_DIRECTUS_URL}/assets/${ejercicio.ejercicio_id.imagen_referencia}`}
-                                                    alt={ejercicio.nombre}
-                                                    className="w-full h-32 object-cover rounded"
-                                                />
+                                                <div className="space-y-2">
+                                                    {ejercicioPlan.series && (
+                                                        <div className="flex items-center text-sm">
+                                                            <span className="text-gray-400 w-20">Series:</span>
+                                                            <span className="font-medium text-primary-400">{ejercicioPlan.series}</span>
+                                                        </div>
+                                                    )}
+                                                    {ejercicioPlan.repeticiones && (
+                                                        <div className="flex items-center text-sm">
+                                                            <span className="text-gray-400 w-20">Reps:</span>
+                                                            <span className="font-medium text-accent-400">{ejercicioPlan.repeticiones}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                        </div>
+                                    );
+                                })}
                         </div>
                     ) : (
                         <div className="text-center py-8 text-gray-400">
@@ -251,6 +259,100 @@ const ClienteDashboard = () => {
                     </div>
                 )}
             </Card>
+
+            {/* Exercise Detail Modal */}
+            <Modal
+                isOpen={showExerciseModal}
+                onClose={() => setShowExerciseModal(false)}
+                title={selectedExercise?.nombre || 'Ejercicio'}
+            >
+                {selectedExercise && (
+                    <div className="py-4 max-h-[70vh] overflow-y-auto">
+                        {/* Images */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {selectedExercise.imagen_url_1 && (
+                                <div className="rounded-xl overflow-hidden h-64">
+                                    <img
+                                        src={selectedExercise.imagen_url_1}
+                                        alt={`${selectedExercise.nombre} - Imagen 1`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            {selectedExercise.imagen_url_2 && (
+                                <div className="rounded-xl overflow-hidden h-64">
+                                    <img
+                                        src={selectedExercise.imagen_url_2}
+                                        alt={`${selectedExercise.nombre} - Imagen 2`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Exercise info */}
+                        <div className="flex flex-wrap gap-3 mb-4">
+                            {selectedExercise.planData?.series && (
+                                <div className="bg-primary-500/20 text-primary-400 px-4 py-2 rounded-lg text-center">
+                                    <p className="text-2xl font-bold">{selectedExercise.planData.series}</p>
+                                    <p className="text-xs">Series</p>
+                                </div>
+                            )}
+                            {selectedExercise.planData?.repeticiones && (
+                                <div className="bg-accent-500/20 text-accent-400 px-4 py-2 rounded-lg text-center">
+                                    <p className="text-2xl font-bold">{selectedExercise.planData.repeticiones}</p>
+                                    <p className="text-xs">Repeticiones</p>
+                                </div>
+                            )}
+                            {selectedExercise.planData?.duracion_minutos && (
+                                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg text-center">
+                                    <p className="text-2xl font-bold">{selectedExercise.planData.duracion_minutos}</p>
+                                    <p className="text-xs">Minutos</p>
+                                </div>
+                            )}
+                            {selectedExercise.grupo_muscular && (
+                                <div className="bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg text-center">
+                                    <p className="text-lg font-bold capitalize">{selectedExercise.grupo_muscular}</p>
+                                    <p className="text-xs">Músculo</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Description */}
+                        {selectedExercise.descripcion && (
+                            <div className="mb-4">
+                                <h4 className="font-semibold mb-2 text-gray-300">Descripción</h4>
+                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.descripcion}</p>
+                            </div>
+                        )}
+
+                        {/* Instructions */}
+                        {selectedExercise.instrucciones && (
+                            <div className="mb-4">
+                                <h4 className="font-semibold mb-2 text-gray-300">Instrucciones</h4>
+                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.instrucciones}</p>
+                            </div>
+                        )}
+
+                        {/* Notes from plan */}
+                        {selectedExercise.planData?.notas && (
+                            <div className="bg-dark-700 rounded-lg p-4">
+                                <h4 className="font-semibold mb-2 text-primary-400">📝 Notas de tu entrenador</h4>
+                                <p className="text-gray-300">{selectedExercise.planData.notas}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="flex justify-end pt-4 border-t border-dark-700">
+                    <button
+                        onClick={() => setShowExerciseModal(false)}
+                        className="btn btn-primary"
+                    >
+                        Cerrar
+                    </button>
+                </div>
+            </Modal>
         </div>
     );
 };

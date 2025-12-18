@@ -197,19 +197,27 @@ const MyPlanPage = () => {
             >
                 {selectedExercise && (
                     <div className="py-4 max-h-[70vh] overflow-y-auto">
-                        {/* Image Carousel */}
-                        {(selectedExercise.imagen_url_1 || selectedExercise.imagen_url_2) && (
-                            <div className="mb-4 rounded-xl overflow-hidden h-96">
-                                <ImageCarousel
-                                    images={[
-                                        selectedExercise.imagen_url_1,
-                                        selectedExercise.imagen_url_2
-                                    ]}
-                                    alt={selectedExercise.nombre}
-                                    className="h-full w-full"
-                                />
-                            </div>
-                        )}
+                        {/* Images Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            {selectedExercise.imagen_url_1 && (
+                                <div className="rounded-xl overflow-hidden h-64">
+                                    <img
+                                        src={selectedExercise.imagen_url_1}
+                                        alt={`${selectedExercise.nombre} - Posición 1`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                            {selectedExercise.imagen_url_2 && (
+                                <div className="rounded-xl overflow-hidden h-64">
+                                    <img
+                                        src={selectedExercise.imagen_url_2}
+                                        alt={`${selectedExercise.nombre} - Posición 2`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            )}
+                        </div>
 
                         {/* Video */}
                         {selectedExercise.video_referencia && (
