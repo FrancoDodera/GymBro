@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Card from '../../components/Card';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ImageCarousel from '../../components/ImageCarousel';
 import { ejerciciosService } from '../../api/directus';
 
 const EjerciciosManager = () => {
@@ -143,69 +144,16 @@ const EjerciciosManager = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredEjercicios.map((ejercicio) => (
                         <Card key={ejercicio.id} className="flex flex-col">
-                            {/* Image/Video Preview */}
+                            {/* Image Carousel */}
                             <div className="h-48 bg-dark-700 rounded-lg overflow-hidden mb-4">
-                                {ejercicio.imagen_url_1 ? (
-                                    <img
-                                        src={ejercicio.imagen_url_1}
-                                        alt={ejercicio.nombre}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            console.error('Error loading image from URL:', {
-                                                nombre: ejercicio.nombre,
-                                                url: ejercicio.imagen_url_1
-                                            });
-                                            // Fallback to placeholder
-                                            e.target.style.display = 'none';
-                                        }}
-                                    />
-                                ) : ejercicio.imagen_referencia ? (
-                                    <img
-                                        src={`${import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055'}/assets/${typeof ejercicio.imagen_referencia === 'object' ? (ejercicio.imagen_referencia.filename_disk || ejercicio.imagen_referencia.id) : ejercicio.imagen_referencia}?access_token=${JSON.parse(localStorage.getItem('directus_auth') || '{}').access_token || ''}`}
-                                        alt={ejercicio.nombre}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            console.error('Error loading image:', {
-                                                nombre: ejercicio.nombre,
-                                                referencia: ejercicio.imagen_referencia,
-                                                url: e.target.src,
-                                                viteUrl: import.meta.env.VITE_DIRECTUS_URL
-                                            });
-                                        }}
-                                    />
-                                ) : ejercicio.imagen_url_2 ? (
-                                    <img
-                                        src={ejercicio.imagen_url_2}
-                                        alt={ejercicio.nombre}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            console.error('Error loading second image from URL:', {
-                                                nombre: ejercicio.nombre,
-                                                url: ejercicio.imagen_url_2
-                                            });
-                                            e.target.style.display = 'none';
-                                        }}
-                                    />
-                                ) : ejercicio.video_referencia ? (
-                                    <video
-                                        src={`${import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055'}/assets/${typeof ejercicio.video_referencia === 'object' ? (ejercicio.video_referencia.filename_disk || ejercicio.video_referencia.id) : ejercicio.video_referencia}?access_token=${JSON.parse(localStorage.getItem('directus_auth') || '{}').access_token || ''}`}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            console.error('Error loading video:', {
-                                                nombre: ejercicio.nombre,
-                                                referencia: ejercicio.video_referencia,
-                                                url: e.target.src,
-                                                viteUrl: import.meta.env.VITE_DIRECTUS_URL
-                                            });
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                        <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                    </div>
-                                )}
+                                <ImageCarousel
+                                    images={[
+                                        ejercicio.imagen_url_1,
+                                        ejercicio.imagen_url_2
+                                    ]}
+                                    alt={ejercicio.nombre}
+                                    className="h-full w-full"
+                                />
                             </div>
 
                             {/* Exercise Info */}

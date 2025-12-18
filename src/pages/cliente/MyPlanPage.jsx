@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ImageCarousel from '../../components/ImageCarousel';
 import { useAuth } from '../../contexts/AuthContext';
 import { suscripcionService } from '../../api/directus';
 
@@ -139,23 +140,11 @@ const MyPlanPage = () => {
                                 <div className="flex gap-4">
                                     {/* Thumbnail */}
                                     <div className="w-20 h-20 rounded-xl bg-dark-700 flex-shrink-0 overflow-hidden">
-                                        {ejercicio.imagen_url_1 ? (
-                                            <img
-                                                src={ejercicio.imagen_url_1}
-                                                alt={ejercicio.nombre}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : hasImage ? (
-                                            <img
-                                                src={getImageUrl(ejercicio.imagen_referencia?.id || ejercicio.imagen_referencia)}
-                                                alt={ejercicio.nombre}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-3xl">
-                                                🏋️
-                                            </div>
-                                        )}
+                                        <ImageCarousel
+                                            images={[ejercicio.imagen_url_1, ejercicio.imagen_url_2]}
+                                            alt={ejercicio.nombre}
+                                            className="h-full w-full"
+                                        />
                                     </div>
 
                                     {/* Info */}
@@ -208,24 +197,16 @@ const MyPlanPage = () => {
             >
                 {selectedExercise && (
                     <div className="py-4 max-h-[70vh] overflow-y-auto">
-                        {/* Image */}
-                        {(selectedExercise.imagen_url_1 || selectedExercise.imagen_referencia) && (
-                            <div className="mb-4 rounded-xl overflow-hidden">
-                                <img
-                                    src={selectedExercise.imagen_url_1 || getImageUrl(selectedExercise.imagen_referencia?.id || selectedExercise.imagen_referencia)}
+                        {/* Image Carousel */}
+                        {(selectedExercise.imagen_url_1 || selectedExercise.imagen_url_2) && (
+                            <div className="mb-4 rounded-xl overflow-hidden h-96">
+                                <ImageCarousel
+                                    images={[
+                                        selectedExercise.imagen_url_1,
+                                        selectedExercise.imagen_url_2
+                                    ]}
                                     alt={selectedExercise.nombre}
-                                    className="w-full h-64 object-cover"
-                                />
-                            </div>
-                        )}
-
-                        {/* Second Image if available */}
-                        {selectedExercise.imagen_url_2 && (
-                            <div className="mb-4 rounded-xl overflow-hidden">
-                                <img
-                                    src={selectedExercise.imagen_url_2}
-                                    alt={`${selectedExercise.nombre} - Vista 2`}
-                                    className="w-full h-64 object-cover"
+                                    className="h-full w-full"
                                 />
                             </div>
                         )}
