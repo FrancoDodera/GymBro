@@ -1260,7 +1260,8 @@ export const ejerciciosService = {
                 readItems('ejercicios', {
                     filter: { activo: { _eq: true } },
                     fields: ['*', 'imagen_referencia.*', 'video_referencia.*', 'imagen_url_1', 'imagen_url_2'],
-                    sort: ['-fecha_creacion']
+                    sort: ['-fecha_creacion'],
+                    limit: -1  // -1 = sin límite, obtener TODOS los ejercicios
                 })
             );
             return response || [];
