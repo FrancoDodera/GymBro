@@ -145,7 +145,21 @@ const EjerciciosManager = () => {
                         <Card key={ejercicio.id} className="flex flex-col">
                             {/* Image/Video Preview */}
                             <div className="h-48 bg-dark-700 rounded-lg overflow-hidden mb-4">
-                                {ejercicio.imagen_referencia ? (
+                                {ejercicio.imagen_url_1 ? (
+                                    <img
+                                        src={ejercicio.imagen_url_1}
+                                        alt={ejercicio.nombre}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            console.error('Error loading image from URL:', {
+                                                nombre: ejercicio.nombre,
+                                                url: ejercicio.imagen_url_1
+                                            });
+                                            // Fallback to placeholder
+                                            e.target.style.display = 'none';
+                                        }}
+                                    />
+                                ) : ejercicio.imagen_referencia ? (
                                     <img
                                         src={`${import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055'}/assets/${typeof ejercicio.imagen_referencia === 'object' ? (ejercicio.imagen_referencia.filename_disk || ejercicio.imagen_referencia.id) : ejercicio.imagen_referencia}?access_token=${JSON.parse(localStorage.getItem('directus_auth') || '{}').access_token || ''}`}
                                         alt={ejercicio.nombre}
@@ -157,6 +171,19 @@ const EjerciciosManager = () => {
                                                 url: e.target.src,
                                                 viteUrl: import.meta.env.VITE_DIRECTUS_URL
                                             });
+                                        }}
+                                    />
+                                ) : ejercicio.imagen_url_2 ? (
+                                    <img
+                                        src={ejercicio.imagen_url_2}
+                                        alt={ejercicio.nombre}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            console.error('Error loading second image from URL:', {
+                                                nombre: ejercicio.nombre,
+                                                url: ejercicio.imagen_url_2
+                                            });
+                                            e.target.style.display = 'none';
                                         }}
                                     />
                                 ) : ejercicio.video_referencia ? (

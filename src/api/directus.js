@@ -784,7 +784,9 @@ export const suscripcionService = {
                         'plan_id.ejercicios.video_referencia.*',
                         'plan_id.ejercicios.ejercicio_id.*',
                         'plan_id.ejercicios.ejercicio_id.imagen_referencia.*',
-                        'plan_id.ejercicios.ejercicio_id.video_referencia.*'
+                        'plan_id.ejercicios.ejercicio_id.video_referencia.*',
+                        'plan_id.ejercicios.ejercicio_id.imagen_url_1',
+                        'plan_id.ejercicios.ejercicio_id.imagen_url_2'
                     ],
                     sort: ['-fecha_inicio'],
                     limit: 1
@@ -1257,7 +1259,7 @@ export const ejerciciosService = {
             const response = await client.request(
                 readItems('ejercicios', {
                     filter: { activo: { _eq: true } },
-                    fields: ['*', 'imagen_referencia.*', 'video_referencia.*'],
+                    fields: ['*', 'imagen_referencia.*', 'video_referencia.*', 'imagen_url_1', 'imagen_url_2'],
                     sort: ['-fecha_creacion']
                 })
             );
@@ -1273,7 +1275,7 @@ export const ejerciciosService = {
             const response = await client.request(
                 readItems('ejercicios', {
                     filter: { id: { _eq: ejercicioId } },
-                    fields: ['*', 'imagen_referencia.*', 'video_referencia.*'],
+                    fields: ['*', 'imagen_referencia.*', 'video_referencia.*', 'imagen_url_1', 'imagen_url_2'],
                     limit: 1
                 })
             );
