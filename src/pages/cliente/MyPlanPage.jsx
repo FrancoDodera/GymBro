@@ -132,19 +132,25 @@ const MyPlanPage = () => {
                         const hasVideo = ejercicio.video_referencia;
 
                         return (
-                            <Card
+                            <div
                                 key={item.id || idx}
-                                className="cursor-pointer hover:border-primary-500/50 transition-all hover:scale-[1.02]"
                                 onClick={() => openExercise({ ...ejercicio, planData: item })}
+                                className="bg-dark-800 border border-dark-600 rounded-xl p-4 cursor-pointer hover:border-primary-500/50 transition-all active:scale-[0.98] touch-manipulation"
                             >
                                 <div className="flex gap-4">
                                     {/* Thumbnail */}
                                     <div className="w-20 h-20 rounded-xl bg-dark-700 flex-shrink-0 overflow-hidden">
-                                        <ImageCarousel
-                                            images={[ejercicio.imagen_url_1, ejercicio.imagen_url_2]}
-                                            alt={ejercicio.nombre}
-                                            className="h-full w-full"
-                                        />
+                                        {ejercicio.imagen_url_1 ? (
+                                            <img
+                                                src={ejercicio.imagen_url_1}
+                                                alt={ejercicio.nombre}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-3xl">
+                                                💪
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Info */}
@@ -162,15 +168,15 @@ const MyPlanPage = () => {
                                                     {item.repeticiones} reps
                                                 </span>
                                             )}
-                                            {item.duracion_segundos && (
+                                            {item.duracion_minutos && (
                                                 <span className="bg-dark-700 px-2 py-0.5 rounded">
-                                                    {item.duracion_segundos}s
+                                                    {item.duracion_minutos}min
                                                 </span>
                                             )}
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            {hasImage && <span>📷 Imagen</span>}
+                                            {(ejercicio.imagen_url_1 || ejercicio.imagen_url_2) && <span>📷 Imágenes</span>}
                                             {hasVideo && <span>🎥 Video</span>}
                                             {ejercicio.descripcion && <span>📝 Descripción</span>}
                                         </div>
@@ -178,12 +184,12 @@ const MyPlanPage = () => {
 
                                     {/* Arrow */}
                                     <div className="flex items-center text-gray-500">
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
                                 </div>
-                            </Card>
+                            </div>
                         );
                     })}
                 </div>
@@ -196,24 +202,24 @@ const MyPlanPage = () => {
                 title={selectedExercise?.nombre || 'Ejercicio'}
             >
                 {selectedExercise && (
-                    <div className="py-4 max-h-[70vh] overflow-y-auto">
-                        {/* Images Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-4">
+                        {/* Images - Stack on mobile, side by side on desktop */}
+                        <div className="space-y-3">
                             {selectedExercise.imagen_url_1 && (
-                                <div className="rounded-xl overflow-hidden h-64">
+                                <div className="rounded-xl overflow-hidden">
                                     <img
                                         src={selectedExercise.imagen_url_1}
-                                        alt={`${selectedExercise.nombre} - Posición 1`}
-                                        className="w-full h-full object-cover"
+                                        alt={`${selectedExercise.nombre} - Posición inicial`}
+                                        className="w-full h-auto object-contain max-h-[50vh]"
                                     />
                                 </div>
                             )}
                             {selectedExercise.imagen_url_2 && (
-                                <div className="rounded-xl overflow-hidden h-64">
+                                <div className="rounded-xl overflow-hidden">
                                     <img
                                         src={selectedExercise.imagen_url_2}
-                                        alt={`${selectedExercise.nombre} - Posición 2`}
-                                        className="w-full h-full object-cover"
+                                        alt={`${selectedExercise.nombre} - Posición final`}
+                                        className="w-full h-auto object-contain max-h-[50vh]"
                                     />
                                 </div>
                             )}
@@ -221,11 +227,12 @@ const MyPlanPage = () => {
 
                         {/* Video */}
                         {selectedExercise.video_referencia && (
-                            <div className="mb-4 rounded-xl overflow-hidden">
+                            <div className="rounded-xl overflow-hidden">
                                 <video
                                     src={getVideoUrl(selectedExercise.video_referencia?.id || selectedExercise.video_referencia)}
                                     controls
                                     className="w-full"
+                                    playsInline
                                     poster={getImageUrl(selectedExercise.imagen_referencia?.id || selectedExercise.imagen_referencia)}
                                 >
                                     Tu navegador no soporta video.
@@ -233,68 +240,73 @@ const MyPlanPage = () => {
                             </div>
                         )}
 
-                        {/* Exercise info */}
-                        <div className="flex flex-wrap gap-3 mb-4">
+                        {/* Exercise Stats - Bigger touch targets */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {selectedExercise.planData?.series && (
-                                <div className="bg-primary-500/20 text-primary-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.series}</p>
-                                    <p className="text-xs">Series</p>
+                                <div className="bg-primary-500/20 text-primary-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.series}</p>
+                                    <p className="text-sm mt-1">Series</p>
                                 </div>
                             )}
                             {selectedExercise.planData?.repeticiones && (
-                                <div className="bg-accent-500/20 text-accent-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.repeticiones}</p>
-                                    <p className="text-xs">Repeticiones</p>
+                                <div className="bg-accent-500/20 text-accent-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.repeticiones}</p>
+                                    <p className="text-sm mt-1">Reps</p>
                                 </div>
                             )}
-                            {selectedExercise.planData?.duracion_segundos && (
-                                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.duracion_segundos}</p>
-                                    <p className="text-xs">Segundos</p>
+                            {selectedExercise.planData?.duracion_minutos && (
+                                <div className="bg-green-500/20 text-green-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.duracion_minutos}</p>
+                                    <p className="text-sm mt-1">Min</p>
                                 </div>
                             )}
                             {selectedExercise.grupo_muscular && (
-                                <div className="bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-lg font-bold capitalize">{selectedExercise.grupo_muscular}</p>
-                                    <p className="text-xs">Músculo</p>
+                                <div className="col-span-2 sm:col-span-3 bg-orange-500/20 text-orange-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-xl font-bold capitalize">{selectedExercise.grupo_muscular}</p>
+                                    <p className="text-sm mt-1">Grupo Muscular</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Description */}
                         {selectedExercise.descripcion && (
-                            <div className="mb-4">
-                                <h4 className="font-semibold mb-2 text-gray-300">Descripción</h4>
-                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.descripcion}</p>
+                            <div className="bg-dark-700/50 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-gray-200 flex items-center gap-2">
+                                    <span>📋</span> Descripción
+                                </h4>
+                                <p className="text-gray-300 leading-relaxed">{selectedExercise.descripcion}</p>
                             </div>
                         )}
 
                         {/* Instructions */}
                         {selectedExercise.instrucciones && (
-                            <div className="mb-4">
-                                <h4 className="font-semibold mb-2 text-gray-300">Instrucciones</h4>
-                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.instrucciones}</p>
+                            <div className="bg-dark-700/50 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-gray-200 flex items-center gap-2">
+                                    <span>✓</span> Instrucciones
+                                </h4>
+                                <p className="text-gray-300 leading-relaxed">{selectedExercise.instrucciones}</p>
                             </div>
                         )}
 
-                        {/* Notes from plan */}
+                        {/* Notes from trainer */}
                         {selectedExercise.planData?.notas && (
-                            <div className="bg-dark-700 rounded-lg p-4">
-                                <h4 className="font-semibold mb-2 text-primary-400">📝 Notas de tu entrenador</h4>
-                                <p className="text-gray-300">{selectedExercise.planData.notas}</p>
+                            <div className="bg-primary-900/30 border border-primary-500/30 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-primary-300 flex items-center gap-2">
+                                    <span>💬</span> Notas de tu entrenador
+                                </h4>
+                                <p className="text-gray-200 leading-relaxed">{selectedExercise.planData.notas}</p>
                             </div>
                         )}
+
+                        {/* Close button - Larger for mobile */}
+                        <button
+                            onClick={() => setShowExerciseModal(false)}
+                            className="w-full btn btn-primary py-4 text-lg font-semibold"
+                        >
+                            Cerrar
+                        </button>
                     </div>
                 )}
-
-                <div className="flex justify-end pt-4 border-t border-dark-700">
-                    <button
-                        onClick={() => setShowExerciseModal(false)}
-                        className="btn btn-primary"
-                    >
-                        Cerrar
-                    </button>
-                </div>
             </Modal>
         </div>
     );

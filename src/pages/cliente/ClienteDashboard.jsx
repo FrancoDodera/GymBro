@@ -267,91 +267,96 @@ const ClienteDashboard = () => {
                 title={selectedExercise?.nombre || 'Ejercicio'}
             >
                 {selectedExercise && (
-                    <div className="py-4 max-h-[70vh] overflow-y-auto">
-                        {/* Images */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="space-y-4">
+                        {/* Images - Stack vertically for mobile */}
+                        <div className="space-y-3">
                             {selectedExercise.imagen_url_1 && (
-                                <div className="rounded-xl overflow-hidden h-64">
+                                <div className="rounded-xl overflow-hidden">
                                     <img
                                         src={selectedExercise.imagen_url_1}
-                                        alt={`${selectedExercise.nombre} - Imagen 1`}
-                                        className="w-full h-full object-cover"
+                                        alt={`${selectedExercise.nombre} - Posición inicial`}
+                                        className="w-full h-auto object-contain max-h-[50vh]"
                                     />
                                 </div>
                             )}
                             {selectedExercise.imagen_url_2 && (
-                                <div className="rounded-xl overflow-hidden h-64">
+                                <div className="rounded-xl overflow-hidden">
                                     <img
                                         src={selectedExercise.imagen_url_2}
-                                        alt={`${selectedExercise.nombre} - Imagen 2`}
-                                        className="w-full h-full object-cover"
+                                        alt={`${selectedExercise.nombre} - Posición final`}
+                                        className="w-full h-auto object-contain max-h-[50vh]"
                                     />
                                 </div>
                             )}
                         </div>
 
-                        {/* Exercise info */}
-                        <div className="flex flex-wrap gap-3 mb-4">
+                        {/* Exercise Stats - Grid layout with bigger touch targets */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {selectedExercise.planData?.series && (
-                                <div className="bg-primary-500/20 text-primary-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.series}</p>
-                                    <p className="text-xs">Series</p>
+                                <div className="bg-primary-500/20 text-primary-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.series}</p>
+                                    <p className="text-sm mt-1">Series</p>
                                 </div>
                             )}
                             {selectedExercise.planData?.repeticiones && (
-                                <div className="bg-accent-500/20 text-accent-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.repeticiones}</p>
-                                    <p className="text-xs">Repeticiones</p>
+                                <div className="bg-accent-500/20 text-accent-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.repeticiones}</p>
+                                    <p className="text-sm mt-1">Reps</p>
                                 </div>
                             )}
                             {selectedExercise.planData?.duracion_minutos && (
-                                <div className="bg-green-500/20 text-green-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-2xl font-bold">{selectedExercise.planData.duracion_minutos}</p>
-                                    <p className="text-xs">Minutos</p>
+                                <div className="bg-green-500/20 text-green-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-3xl sm:text-4xl font-bold">{selectedExercise.planData.duracion_minutos}</p>
+                                    <p className="text-sm mt-1">Min</p>
                                 </div>
                             )}
                             {selectedExercise.grupo_muscular && (
-                                <div className="bg-orange-500/20 text-orange-400 px-4 py-2 rounded-lg text-center">
-                                    <p className="text-lg font-bold capitalize">{selectedExercise.grupo_muscular}</p>
-                                    <p className="text-xs">Músculo</p>
+                                <div className="col-span-2 sm:col-span-3 bg-orange-500/20 text-orange-400 px-4 py-3 rounded-xl text-center">
+                                    <p className="text-xl font-bold capitalize">{selectedExercise.grupo_muscular}</p>
+                                    <p className="text-sm mt-1">Grupo Muscular</p>
                                 </div>
                             )}
                         </div>
 
                         {/* Description */}
                         {selectedExercise.descripcion && (
-                            <div className="mb-4">
-                                <h4 className="font-semibold mb-2 text-gray-300">Descripción</h4>
-                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.descripcion}</p>
+                            <div className="bg-dark-700/50 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-gray-200 flex items-center gap-2">
+                                    <span>📋</span> Descripción
+                                </h4>
+                                <p className="text-gray-300 leading-relaxed">{selectedExercise.descripcion}</p>
                             </div>
                         )}
 
                         {/* Instructions */}
                         {selectedExercise.instrucciones && (
-                            <div className="mb-4">
-                                <h4 className="font-semibold mb-2 text-gray-300">Instrucciones</h4>
-                                <p className="text-gray-400 whitespace-pre-wrap">{selectedExercise.instrucciones}</p>
+                            <div className="bg-dark-700/50 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-gray-200 flex items-center gap-2">
+                                    <span>✓</span> Instrucciones
+                                </h4>
+                                <p className="text-gray-300 leading-relaxed">{selectedExercise.instrucciones}</p>
                             </div>
                         )}
 
-                        {/* Notes from plan */}
+                        {/* Notes from trainer */}
                         {selectedExercise.planData?.notas && (
-                            <div className="bg-dark-700 rounded-lg p-4">
-                                <h4 className="font-semibold mb-2 text-primary-400">📝 Notas de tu entrenador</h4>
-                                <p className="text-gray-300">{selectedExercise.planData.notas}</p>
+                            <div className="bg-primary-900/30 border border-primary-500/30 rounded-xl p-4">
+                                <h4 className="font-semibold mb-2 text-primary-300 flex items-center gap-2">
+                                    <span>💬</span> Notas de tu entrenador
+                                </h4>
+                                <p className="text-gray-200 leading-relaxed">{selectedExercise.planData.notas}</p>
                             </div>
                         )}
+
+                        {/* Close button - Full width, large for mobile */}
+                        <button
+                            onClick={() => setShowExerciseModal(false)}
+                            className="w-full btn btn-primary py-4 text-lg font-semibold"
+                        >
+                            Cerrar
+                        </button>
                     </div>
                 )}
-
-                <div className="flex justify-end pt-4 border-t border-dark-700">
-                    <button
-                        onClick={() => setShowExerciseModal(false)}
-                        className="btn btn-primary"
-                    >
-                        Cerrar
-                    </button>
-                </div>
             </Modal>
         </div>
     );
