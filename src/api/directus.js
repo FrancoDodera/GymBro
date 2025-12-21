@@ -1465,17 +1465,21 @@ export const planesIAService = {
                     fields: [
                         '*',
                         'ejercicios.id',
-                        'ejercicios.ejercicio_id.*',
-                        'ejercicios.ejercicio_id.imagen_referencia.*',
-                        'ejercicios.ejercicio_id.video_referencia.*',
-                        'ejercicios.ejercicio_id.imagen_url_1',
-                        'ejercicios.ejercicio_id.imagen_url_2',
                         'ejercicios.dia',
                         'ejercicios.orden',
                         'ejercicios.series',
                         'ejercicios.repeticiones',
                         'ejercicios.duracion_minutos',
-                        'ejercicios.notas'
+                        'ejercicios.notas',
+                        'ejercicios.ejercicio_id.id',
+                        'ejercicios.ejercicio_id.nombre',
+                        'ejercicios.ejercicio_id.descripcion',
+                        'ejercicios.ejercicio_id.categoria',
+                        'ejercicios.ejercicio_id.nivel_dificultad',
+                        'ejercicios.ejercicio_id.imagen_url_1',
+                        'ejercicios.ejercicio_id.imagen_url_2',
+                        'ejercicios.ejercicio_id.imagen_referencia',
+                        'ejercicios.ejercicio_id.video_referencia'
                     ],
                     sort: ['-fecha_generacion'],
                     limit: 1
