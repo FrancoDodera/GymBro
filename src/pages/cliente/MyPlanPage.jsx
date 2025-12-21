@@ -94,22 +94,18 @@ const MyPlanPage = () => {
 
     // Get exercises based on plan type
     const ejercicios = planType === 'ia'
-        ? (activePlan.ejercicios || []).map(ej => {
-            console.log('[MyPlanPage] IA Exercise item:', ej);
-            console.log('[MyPlanPage] ejercicio_id:', ej.ejercicio_id);
-            return {
-                ...ej,
-                ejercicio_id: ej.ejercicio_id,
-                // Map the junction table fields
-                id: ej.id,
-                series: ej.series,
-                repeticiones: ej.repeticiones,
-                duracion_minutos: ej.duracion_minutos,
-                notas: ej.notas,
-                dia: ej.dia,
-                orden: ej.orden
-            };
-        })
+        ? (activePlan.ejercicios || []).map(ej => ({
+            ...ej,
+            ejercicio_id: ej.ejercicio_id,
+            // Map the junction table fields
+            id: ej.id,
+            series: ej.series,
+            repeticiones: ej.repeticiones,
+            duracion_minutos: ej.duracion_minutos,
+            notas: ej.notas,
+            dia: ej.dia,
+            orden: ej.orden
+        }))
         : (activePlan?.ejercicios || []);
 
     const totalExercises = ejercicios.length;

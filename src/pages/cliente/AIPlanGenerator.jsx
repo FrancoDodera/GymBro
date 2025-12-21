@@ -38,8 +38,6 @@ const AIPlanGenerator = () => {
     const loadEjercicios = async () => {
         try {
             const ejercicios = await ejerciciosService.getAll();
-            console.log('[AIPlanGenerator] Ejercicios cargados:', ejercicios.length);
-            console.log('[AIPlanGenerator] Sample ejercicio:', ejercicios[0]);
             setEjerciciosDisponibles(ejercicios);
         } catch (error) {
             console.error('Error loading ejercicios:', error);

@@ -1,59 +1,106 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../api/directus';
 import Card from './Card';
 
-/**
- * PlanTypeSelector - Component for clients to choose between trainer or AI plan
- */
-const PlanTypeSelector = ({ onSelect, clienteProfile }) => {
+const PlanTypeSelector = () => {
     const navigate = useNavigate();
+    const { user, updateUserProfile } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const planTypes = [
-        {
-            id: 'profesor',
-            title: 'Plan con Profesor',
-            icon: '👨‍🏫',
-            color: 'from-blue-500 to-blue-600',
-            description: 'Recibe un plan personalizado diseñado por tu entrenador profesional.',
-            features: [
-                '✅ Seguimiento personalizado',
-                '✅ Ajustes basados en tu progreso',
-                '✅ Comunicación directa con entrenador',
-                '✅ Planes adaptados a tus objetivos específicos'
-            ],
-            buttonText: clienteProfile?.entrenador_asignado
-                ? 'Esperar Plan del Entrenador'
-                : 'Solicitar Asignación de Entrenador',
-            buttonColor: 'bg-blue-600 hover:bg-blue-700',
-            available: true
-        },
-        {
-            id: 'ia',
-            title: 'Plan Generado por IA',
-            icon: '🤖',
-            color: 'from-purple-500 to-purple-600',
-            description: 'Genera instantáneamente un plan de entrenamiento con inteligencia artificial.',
-            features: [
-                '⚡ Generación instantánea',
-                '🎯 Adaptado a tus objetivos',
-                '🔄 Regenerable cuando quieras',
-                '💪 Basado en ejercicios profesionales'
-            ],
-            buttonText: 'Generar Plan con IA',
-            buttonColor: 'bg-purple-600 hover:bg-purple-700',
-            available: true
-        }
-    ];
+    const handleSelectTrainer = async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-    const handleSelect = (typeId) => {
-        if (typeId === 'ia') {
-            // Navigate to AI plan generator
-            navigate('/cliente/generar-plan-ia');
-        } else {
-            // For trainer plan, just set the preference
-            onSelect && onSelect(typeId);
+            // Update preference in database
+            await authService.updatePlanPreference(user.profile.id, 'profesor');
+
+            // Update local user context
+            await updateUserProfile();
+
+            // Reload to show waiting state
+            window.location.reload();
+        } catch (err) {
+            console.error('Error updating plan preference:', err);
+            setError('Error al guardar tu preferencia. Por favor intenta nuevamente.');
+        } finally {
+            setLoading(false);
         }
     };
+
+    const handleSelectAI = () => {
+        navigate('/cliente/generar-plan-ia');
+    };
+
+    const handleChangePlanType = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Reset preference
+            await authService.updatePlanPreference(user.profile.id, null);
+
+            // Update local user context
+            await updateUserProfile();
+
+            // Reload to show selection again
+            window.location.reload();
+        } catch (err) {
+            console.error('Error resetting plan preference:', err);
+            setError('Error al cambiar tu preferencia. Por favor intenta nuevamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Check if user already chose trainer plan but doesn't have one assigned
+    const isWaitingForTrainer = user?.profile?.tipo_plan_preferido === 'profesor';
+
+    if (isWaitingForTrainer) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-8 px-4 flex items-center justify-center">
+                <Card className="max-w-2xl w-full bg-white/5 border-white/10">
+                    <div className="text-center p-8">
+                        <div className="text-6xl mb-4">⏳</div>
+                        <h2 className="text-3xl font-bold text-white mb-4">
+                            Esperando Asignación de Entrenador
+                        </h2>
+                        <p className="text-gray-300 mb-8">
+                            Has solicitado un plan con entrenador profesional. Tu entrenador te asignará un plan personalizado pronto.
+                        </p>
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
+                            <p className="text-blue-300 text-sm">
+                                💡 <strong>Tip:</strong> Recibirás una notificación cuando tu plan esté listo
+                            </p>
+                        </div>
+                        {error && (
+                            <div className="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200">
+                                {error}
+                            </div>
+                        )}
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => navigate('/cliente/dashboard')}
+                                className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-xl transition-colors"
+                            >
+                                Volver al Dashboard
+                            </button>
+                            <button
+                                onClick={handleChangePlanType}
+                                disabled={loading}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-colors disabled:opacity-50"
+                            >
+                                {loading ? 'Cambiando...' : 'Cambiar a Plan IA'}
+                            </button>
+                        </div>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-8 px-4">
@@ -63,66 +110,106 @@ const PlanTypeSelector = ({ onSelect, clienteProfile }) => {
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
                         Elige tu Tipo de Plan
                     </h1>
-                    <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+                    <p className="text-gray-400 text-lg">
                         Selecciona cómo quieres gestionar tu entrenamiento. Puedes cambiar tu elección en cualquier momento.
                     </p>
                 </div>
 
-                {/* Plan Type Cards */}
-                <div className="grid md:grid-cols-2 gap-8 mb-8">
-                    {planTypes.map((type) => (
-                        <div
-                            key={type.id}
-                            className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all duration-300 hover:transform hover:scale-105"
-                        >
-                            {/* Gradient Background */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${type.color} opacity-10 group-hover:opacity-20 transition-opacity`} />
+                {error && (
+                    <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-center max-w-2xl mx-auto">
+                        {error}
+                    </div>
+                )}
 
-                            {/* Content */}
-                            <div className="relative p-8">
-                                {/* Icon & Title */}
-                                <div className="text-center mb-6">
-                                    <div className="text-6xl mb-4">{type.icon}</div>
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                                        {type.title}
-                                    </h2>
-                                    <p className="text-gray-300">
-                                        {type.description}
-                                    </p>
-                                </div>
+                {/* Cards */}
+                <div className="grid md:grid-cols-2 gap-8">
+                    {/* Trainer Plan Card */}
+                    <div className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-blue-500/30 hover:border-blue-500/50 transition-all duration-300">
+                        <div className="absolute insert-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-10 group-hover:opacity-20 transition-opacity" />
 
-                                {/* Features */}
-                                <div className="space-y-3 mb-8">
-                                    {type.features.map((feature, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-start gap-2 text-gray-200"
-                                        >
-                                            <span className="text-sm leading-relaxed">{feature}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Action Button */}
-                                <button
-                                    onClick={() => handleSelect(type.id)}
-                                    disabled={!type.available}
-                                    className={`w-full ${type.buttonColor} text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg`}
-                                >
-                                    {type.buttonText}
-                                </button>
-
-                                {/* Recommended Badge (optional) */}
-                                {type.id === 'ia' && (
-                                    <div className="absolute top-4 right-4">
-                                        <span className="bg-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
-                                            ⚡ Rápido
-                                        </span>
-                                    </div>
-                                )}
+                        <div className="relative p-8">
+                            <div className="text-center mb-6">
+                                <div className="text-6xl mb-4">👨‍🏫</div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                                    Plan con Profesor
+                                </h2>
+                                <p className="text-gray-300">
+                                    Recibe un plan personalizado diseñado por tu entrenador profesional.
+                                </p>
                             </div>
+
+                            <div className="space-y-3 mb-8">
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>✅ Seguimiento personalizado</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>✅ Ajustes basados en tu progreso</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>✅ Comunicación directa con entrenador</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>✅ Planes adaptados a tus objetivos específicos</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSelectTrainer}
+                                disabled={loading}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all disabled:opacity-50"
+                            >
+                                {loading ? 'Guardando...' : 'Solicitar Asignación de Entrenador'}
+                            </button>
                         </div>
-                    ))}
+                    </div>
+
+                    {/* AI Plan Card */}
+                    <div className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-sm border border-purple-500/30 hover:border-purple-500/50 transition-all duration-300">
+                        <div className="absolute top-4 right-4 z-10">
+                            <span className="bg-yellow-500 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full">
+                                ⚡ Rápido
+                            </span>
+                        </div>
+
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-600 opacity-10 group-hover:opacity-20 transition-opacity" />
+
+                        <div className="relative p-8">
+                            <div className="text-center mb-6">
+                                <div className="text-6xl mb-4">🤖</div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                                    Plan Generado por IA
+                                </h2>
+                                <p className="text-gray-300">
+                                    Genera instant
+
+                                    áneamente un plan de entrenamiento con inteligencia artificial.
+                                </p>
+                            </div>
+
+                            <div className="space-y-3 mb-8">
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>⚡ Generación instantánea</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>🎯 Adaptado a tus objetivos</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>🔄 Regenerable cuando quieras</span>
+                                </div>
+                                <div className="flex items-start gap-2 text-gray-200">
+                                    <span>💪 Basado en ejercicios profesionales</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleSelectAI}
+                                disabled={loading}
+                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all disabled:opacity-50"
+                            >
+                                Generar Plan con IA
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Info Cards */}

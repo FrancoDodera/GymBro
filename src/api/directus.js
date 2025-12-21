@@ -250,6 +250,20 @@ export const profileService = {
         }
     },
 
+    async updatePlanPreference(clienteId, tipoPlan) {
+        try {
+            const response = await client.request(
+                updateItem('clientes', clienteId, {
+                    tipo_plan_preferido: tipoPlan
+                })
+            );
+            return response;
+        } catch (error) {
+            console.error('Error updating plan preference:', error);
+            throw error;
+        }
+    },
+
     async updateEntrenadorProfile(entrenadorId, data) {
         try {
             const response = await client.request(
@@ -1485,8 +1499,6 @@ export const planesIAService = {
                     limit: 1
                 })
             );
-            console.log('[planesIAService.getActiveByCliente] Response:', response);
-            console.log('[planesIAService.getActiveByCliente] First item:', response?.[0]);
             return response?.[0] || null;
         } catch (error) {
             console.error('Error getting active AI plan:', error);
