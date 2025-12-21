@@ -1481,6 +1481,8 @@ export const planesIAService = {
                     limit: 1
                 })
             );
+            console.log('[planesIAService.getActiveByCliente] Response:', response);
+            console.log('[planesIAService.getActiveByCliente] First item:', response?.[0]);
             return response?.[0] || null;
         } catch (error) {
             console.error('Error getting active AI plan:', error);
