@@ -163,6 +163,7 @@ export const authService = {
             const detectedRole = getRoleFromId(user.role);
             console.log('[authService.getCurrentUser] Detected role:', detectedRole);
 
+
             // Add detectedRole to user object for AuthContext
             user.detectedRole = detectedRole;
 
@@ -173,6 +174,20 @@ export const authService = {
         } catch (error) {
             console.error('[authService.getCurrentUser] Error:', error);
             return null;
+        }
+    },
+
+    async updatePlanPreference(clienteId, tipoPlan) {
+        try {
+            const response = await client.request(
+                updateItem('clientes', clienteId, {
+                    tipo_plan_preferido: tipoPlan
+                })
+            );
+            return response;
+        } catch (error) {
+            console.error('Error updating plan preference:', error);
+            throw error;
         }
     }
 };
@@ -246,20 +261,6 @@ export const profileService = {
             return response;
         } catch (error) {
             console.error('Error updating cliente profile:', error);
-            throw error;
-        }
-    },
-
-    async updatePlanPreference(clienteId, tipoPlan) {
-        try {
-            const response = await client.request(
-                updateItem('clientes', clienteId, {
-                    tipo_plan_preferido: tipoPlan
-                })
-            );
-            return response;
-        } catch (error) {
-            console.error('Error updating plan preference:', error);
             throw error;
         }
     },
