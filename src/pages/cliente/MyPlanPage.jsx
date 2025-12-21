@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import ImageCarousel from '../../components/ImageCarousel';
 import { useAuth } from '../../contexts/AuthContext';
-import { suscripcionService } from '../../api/directus';
+import { suscripcionService, planesIAService } from '../../api/directus';
 
 const directusUrl = import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055';
 
 const MyPlanPage = () => {
     const { profile } = useAuth();
     const [subscription, setSubscription] = useState(null);
+    const [planIA, setPlanIA] = useState(null);
+    const [activePlan, setActivePlan] = useState(null); // The plan being displayed
+    const [planType, setPlanType] = useState(null); // 'trainer' or 'ia'
     const [loading, setLoading] = useState(true);
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [showExerciseModal, setShowExerciseModal] = useState(false);
@@ -23,8 +27,23 @@ const MyPlanPage = () => {
 
     const loadPlan = async () => {
         setLoading(true);
-        const data = await suscripcionService.getByCliente(profile.id);
-        setSubscription(data);
+        const [subscriptionData, planIAData] = await Promise.all([
+            suscripcionService.getByCliente(profile.id),
+            planesIAService.getActiveByCliente(profile.id)
+        ]);
+
+        setSubscription(subscriptionData);
+        setPlanIA(planIAData);
+
+        // Determine which plan to show (prioritize trainer plan if both exist)
+        if (subscriptionData?.plan_id) {
+            setActivePlan(subscriptionData.plan_id);
+            setPlanType('trainer');
+        } else if (planIAData) {
+            setActivePlan(planIAData);
+            setPlanType('ia');
+        }
+
         setLoading(false);
     };
 
@@ -47,30 +66,48 @@ const MyPlanPage = () => {
         return <LoadingSpinner message="Cargando tu plan..." />;
     }
 
-    if (!subscription || !subscription.plan_id) {
+    if (!subscription && !planIA) {
         return (
             <div className="max-w-4xl mx-auto px-4 py-8">
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold font-display text-gradient mb-2">Mi Plan</h1>
-                    <p className="text-gray-400">Tu plan de entrenamiento asignado</p>
+                    <p className="text-gray-400">Tu plan de entrenamiento</p>
                 </div>
                 <Card>
                     <div className="text-center py-12">
                         <div className="text-6xl mb-4">📋</div>
                         <h3 className="text-xl font-semibold mb-2">No tienes un plan asignado</h3>
-                        <p className="text-gray-400">
-                            Tu entrenador te asignará un plan de entrenamiento pronto.
+                        <p className="text-gray-400 mb-6">
+                            Elige un tipo de plan para comenzar tu entrenamiento.
                         </p>
+                        <Link
+                            to="/cliente/elegir-plan"
+                            className="inline-block bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-3 px-8 rounded-xl transition-all"
+                        >
+                            Elegir Tipo de Plan →
+                        </Link>
                     </div>
                 </Card>
             </div>
         );
     }
 
-    const plan = subscription.plan_id;
-    const ejercicios = plan.ejercicios || [];
+    // Get exercises based on plan type
+    const ejercicios = planType === 'ia'
+        ? (activePlan.ejercicios || []).map(ej => ({
+            ...ej,
+            ejercicio_id: ej.ejercicio_id,
+            // Map the junction table fields
+            id: ej.id,
+            series: ej.series,
+            repeticiones: ej.repeticiones,
+            duracion_minutos: ej.duracion_minutos,
+            notas: ej.notas,
+            dia: ej.dia,
+            orden: ej.orden
+        }))
+        : (activePlan?.ejercicios || []);
 
-    // Group exercises by some logic or just show list
     const totalExercises = ejercicios.length;
 
     return (
@@ -80,30 +117,94 @@ const MyPlanPage = () => {
                 <p className="text-gray-400">Tu plan de entrenamiento personalizado</p>
             </div>
 
+            {/* Plan Type Switcher */}
+            {subscription && planIA && (
+                <div className="mb-6 flex gap-2">
+                    <button
+                        onClick={() => {
+                            setActivePlan(subscription.plan_id);
+                            setPlanType('trainer');
+                        }}
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${planType === 'trainer'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-dark-700 text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        👨‍🏫 Plan con Profesor
+                    </button>
+                    <button
+                        onClick={() => {
+                            setActivePlan(planIA);
+                            setPlanType('ia');
+                        }}
+                        className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${planType === 'ia'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-dark-700 text-gray-400 hover:text-white'
+                            }`}
+                    >
+                        🤖 Plan IA
+                    </button>
+                </div>
+            )}
+
             {/* Plan Header */}
-            <Card className="mb-6 !bg-gradient-to-br from-primary-900/30 via-dark-800 to-accent-900/20 border-primary-500/30">
+            <Card className={`mb-6 ${planType === 'ia' ? '!bg-gradient-to-br from-purple-900/30 via-dark-800 to-purple-900/20 border-purple-500/30' : '!bg-gradient-to-br from-primary-900/30 via-dark-800 to-accent-900/20 border-primary-500/30'}`}>
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
-                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center text-4xl flex-shrink-0">
-                        💪
+                    <div className={`w-20 h-20 rounded-2xl ${planType === 'ia' ? 'bg-gradient-to-br from-purple-500 to-purple-700' : 'bg-gradient-to-br from-primary-500 to-accent-500'} flex items-center justify-center text-4xl flex-shrink-0`}>
+                        {planType === 'ia' ? '🤖' : '💪'}
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-2xl md:text-3xl font-bold mb-2">{plan.nombre}</h2>
-                        {plan.descripcion && (
-                            <p className="text-gray-400 mb-3">{plan.descripcion}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <h2 className="text-2xl md:text-3xl font-bold">{activePlan.nombre}</h2>
+                            <span className={`badge text-xs ${planType === 'ia'
+                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                }`}>
+                                {planType === 'ia' ? 'Generado por IA' : 'Plan Entrenador'}
+                            </span>
+                        </div>
+                        {activePlan.descripcion && (
+                            <p className="text-gray-400 mb-3">{activePlan.descripcion}</p>
                         )}
                         <div className="flex flex-wrap gap-4 text-sm">
-                            <span className="flex items-center gap-2 text-primary-400">
-                                <span>📅</span>
-                                {plan.duracion_dias ? `${plan.duracion_dias} días` : 'Sin duración definida'}
-                            </span>
+                            {planType === 'trainer' && activePlan.duracion_dias && (
+                                <span className="flex items-center gap-2 text-primary-400">
+                                    <span>📅</span>
+                                    {activePlan.duracion_dias} días
+                                </span>
+                            )}
+                            {planType === 'ia' && (
+                                <>
+                                    <span className="flex items-center gap-2 text-purple-400">
+                                        <span>📅</span>
+                                        <span className="capitalize">{activePlan.duracion_tipo}</span>
+                                    </span>
+                                    <span className="flex items-center gap-2 text-purple-400">
+                                        <span>🎯</span>
+                                        <span className="capitalize">{activePlan.objetivo?.replace('_', ' ')}</span>
+                                    </span>
+                                    <span className="flex items-center gap-2 text-purple-400">
+                                        <span>📊</span>
+                                        <span className="capitalize">{activePlan.nivel_experiencia}</span>
+                                    </span>
+                                </>
+                            )}
                             <span className="flex items-center gap-2 text-accent-400">
                                 <span>🏋️</span>
                                 {totalExercises} ejercicios
                             </span>
-                            <span className="flex items-center gap-2 text-green-400">
-                                <span>✓</span>
-                                Activo desde {new Date(subscription.fecha_inicio).toLocaleDateString('es-ES')}
-                            </span>
+                            {planType === 'trainer' && subscription && (
+                                <span className="flex items-center gap-2 text-green-400">
+                                    <span>✓</span>
+                                    Activo desde {new Date(subscription.fecha_inicio).toLocaleDateString('es-ES')}
+                                </span>
+                            )}
+                            {planType === 'ia' && activePlan.fecha_generacion && (
+                                <span className="flex items-center gap-2 text-green-400">
+                                    <span>✓</span>
+                                    Generado {new Date(activePlan.fecha_generacion).toLocaleDateString('es-ES')}
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>

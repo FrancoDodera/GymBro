@@ -16,6 +16,8 @@ import ClienteDashboard from './pages/cliente/ClienteDashboard';
 import SessionRegistration from './pages/cliente/SessionRegistration';
 import ProgressPage from './pages/cliente/ProgressPage';
 import MyPlanPage from './pages/cliente/MyPlanPage';
+import AIPlanGenerator from './pages/cliente/AIPlanGenerator';
+import PlanTypeSelector from './components/PlanTypeSelector';
 import EntrenadorDashboard from './pages/entrenador/EntrenadorDashboard';
 import PlanesManager from './pages/entrenador/PlanesManager';
 import PlanForm from './pages/entrenador/PlanForm';
@@ -252,6 +254,22 @@ const Router = () => {
                     element={
                         <ProtectedRoute allowedRoles={['cliente', 'client']}>
                             <MyPlanPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/cliente/elegir-plan"
+                    element={
+                        <ProtectedRoute allowedRoles={['cliente', 'client']}>
+                            <PlanTypeSelector />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/cliente/generar-plan-ia"
+                    element={
+                        <ProtectedRoute allowedRoles={['cliente', 'client']}>
+                            <AIPlanGenerator />
                         </ProtectedRoute>
                     }
                 />

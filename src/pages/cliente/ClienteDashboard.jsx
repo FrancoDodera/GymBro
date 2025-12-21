@@ -1,9 +1,10 @@
 import { React, useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../../components/Card';
 import Modal from '../../components/Modal';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { useAuth } from '../../contexts/AuthContext';
-import { clienteService, suscripcionService } from '../../api/directus';
+import { clienteService, suscripcionService, planesIAService } from '../../api/directus';
 import { calculateStreak, getMotivationalMessage, getWeeklyStats } from '../../utils/helpers';
 import ProgressChart from '../../components/ProgressChart';
 
@@ -13,6 +14,7 @@ const ClienteDashboard = () => {
     const { profile, user } = useAuth();
     const [sessions, setSessions] = useState([]);
     const [subscription, setSubscription] = useState(null);
+    const [planIA, setPlanIA] = useState(null);
     const [loading, setLoading] = useState(true);
     const [streak, setStreak] = useState(0);
     const [selectedExercise, setSelectedExercise] = useState(null);
@@ -28,13 +30,15 @@ const ClienteDashboard = () => {
 
     const loadData = async () => {
         setLoading(true);
-        const [sessionsData, subscriptionData] = await Promise.all([
+        const [sessionsData, subscriptionData, planIAData] = await Promise.all([
             clienteService.getMySessions(profile.id),
-            suscripcionService.getByCliente(profile.id)
+            suscripcionService.getByCliente(profile.id),
+            planesIAService.getActiveByCliente(profile.id)
         ]);
 
         setSessions(sessionsData);
         setSubscription(subscriptionData);
+        setPlanIA(planIAData);
         setStreak(calculateStreak(sessionsData));
         setLoading(false);
     };
@@ -109,8 +113,91 @@ const ClienteDashboard = () => {
                     )}
                 </Card>
 
+                {/* Plan Type Selection / Status */}
+                <Card header={<h2 className="text-xl font-bold">Mi Plan de Entrenamiento</h2>}>
+                    {!subscription && !planIA ? (
+                        <div className="text-center py-8">
+                            <div className="text-5xl mb-4">🎯</div>
+                            <h3 className="text-lg font-semibold text-white mb-2">
+                                ¡Elige tu Tipo de Plan!
+                            </h3>
+                            <p className="text-gray-400 mb-6">
+                                Entrena con un profesor o genera un plan con IA
+                            </p>
+                            <Link
+                                to="/cliente/elegir-plan"
+                                className="inline-block bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-3 px-8 rounded-xl transition-all"
+                            >
+                                Elegir Tipo de Plan →
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {/* Show trainer plan if exists */}
+                            {subscription && (
+                                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-2xl">👨‍🏫</span>
+                                        <h3 className="text-lg font-semibold text-blue-400">Plan con Profesor</h3>
+                                    </div>
+                                    <p className="text-sm text-gray-300 mb-2">{subscription.plan_id?.nombre}</p>
+                                    <Link
+                                        to="/cliente/plan"
+                                        className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                                    >
+                                        Ver detalles →
+                                    </Link>
+                                </div>
+                            )}
+
+                            {/* Show AI plan if exists */}
+                            {planIA && (
+                                <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl">🤖</span>
+                                            <h3 className="text-lg font-semibold text-purple-400">Plan IA</h3>
+                                        </div>
+                                        <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full capitalize">
+                                            {planIA.duracion_tipo}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-300 mb-1">{planIA.nombre}</p>
+                                    <p className="text-xs text-gray-400 mb-3">
+                                        Objetivo: {planIA.objetivo?.replace('_', ' ')} • {planIA.nivel_experiencia}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <Link
+                                            to="/cliente/plan"
+                                            className="text-purple-400 hover:text-purple-300 text-sm font-medium"
+                                        >
+                                            Ver detalles →
+                                        </Link>
+                                        <Link
+                                            to="/cliente/generar-plan-ia"
+                                            className="text-purple-400 hover:text-purple-300 text-sm font-medium ml-auto"
+                                        >
+                                            🔄 Regenerar
+                                        </Link>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Option to add another type */}
+                            {(subscription || planIA) && !(subscription && planIA) && (
+                                <Link
+                                    to="/cliente/elegir-plan"
+                                    className="block text-center py-3 border border-dashed border-gray-600 hover:border-purple-500 rounded-lg text-gray-400 hover:text-purple-400 transition-colors text-sm"
+                                >
+                                    + Agregar {subscription ? 'Plan IA' : 'Plan con Profesor'}
+                                </Link>
+                            )}
+                        </div>
+                    )}
+                </Card>
+
                 {/* Subscription Status */}
-                <Card header={<h2 className="text-xl font-bold">Mi Suscripción</h2>}>
+                <Card header={<h2 className="text-xl font-bold">Estado de Suscripción</h2>}>
                     {subscription ? (
                         <div className="space-y-4">
                             <div>

@@ -1363,3 +1363,263 @@ export const ejerciciosService = {
         }
     }
 };
+
+// ============================================
+// Planes IA Service - AI-Generated Plans
+// ============================================
+export const planesIAService = {
+    /**
+     * Create a new AI-generated plan with exercises
+     */
+    async create(planData, ejercicios) {
+        try {
+            console.log('[planesIAService.create] Creating AI plan:', planData);
+
+            // Create the plan
+            const plan = await client.request(
+                createItem('planes_ia', {
+                    cliente_id: planData.cliente_id,
+                    nombre: planData.nombre,
+                    descripcion: planData.descripcion,
+                    objetivo: planData.objetivo,
+                    nivel_experiencia: planData.nivel_experiencia,
+                    duracion_tipo: planData.duracion_tipo,
+                    dias_semana: planData.dias_semana,
+                    equipamiento: planData.equipamiento,
+                    limitaciones: planData.limitaciones,
+                    prompt_usado: planData.prompt_usado,
+                    activo: true
+                })
+            );
+
+            console.log('[planesIAService.create] Plan created:', plan);
+
+            // Create exercise relationships
+            for (const ejercicio of ejercicios) {
+                await client.request(
+                    createItem('ejercicios_plan_ia', {
+                        plan_ia_id: plan.id,
+                        ejercicio_id: ejercicio.ejercicio_id,
+                        dia: ejercicio.dia || 1,
+                        orden: ejercicio.orden,
+                        series: ejercicio.series,
+                        repeticiones: ejercicio.repeticiones,
+                        duracion_minutos: ejercicio.duracion_minutos,
+                        notas: ejercicio.notas
+                    })
+                );
+            }
+
+            console.log('[planesIAService.create] Exercises linked:', ejercicios.length);
+            return plan;
+        } catch (error) {
+            console.error('Error creating AI plan:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get all AI plans for a specific cliente
+     */
+    async getByCliente(clienteId) {
+        try {
+            const response = await client.request(
+                readItems('planes_ia', {
+                    filter: {
+                        cliente_id: { _eq: clienteId }
+                    },
+                    fields: [
+                        '*',
+                        'ejercicios.id',
+                        'ejercicios.ejercicio_id.*',
+                        'ejercicios.ejercicio_id.imagen_referencia.*',
+                        'ejercicios.ejercicio_id.video_referencia.*',
+                        'ejercicios.dia',
+                        'ejercicios.orden',
+                        'ejercicios.series',
+                        'ejercicios.repeticiones',
+                        'ejercicios.duracion_minutos',
+                        'ejercicios.notas'
+                    ],
+                    sort: ['-fecha_generacion']
+                })
+            );
+            return response || [];
+        } catch (error) {
+            console.error('Error getting AI plans:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Get the active AI plan for a cliente
+     */
+    async getActiveByCliente(clienteId) {
+        try {
+            const response = await client.request(
+                readItems('planes_ia', {
+                    filter: {
+                        cliente_id: { _eq: clienteId },
+                        activo: { _eq: true }
+                    },
+                    fields: [
+                        '*',
+                        'ejercicios.id',
+                        'ejercicios.ejercicio_id.*',
+                        'ejercicios.ejercicio_id.imagen_referencia.*',
+                        'ejercicios.ejercicio_id.video_referencia.*',
+                        'ejercicios.ejercicio_id.imagen_url_1',
+                        'ejercicios.ejercicio_id.imagen_url_2',
+                        'ejercicios.dia',
+                        'ejercicios.orden',
+                        'ejercicios.series',
+                        'ejercicios.repeticiones',
+                        'ejercicios.duracion_minutos',
+                        'ejercicios.notas'
+                    ],
+                    sort: ['-fecha_generacion'],
+                    limit: 1
+                })
+            );
+            return response?.[0] || null;
+        } catch (error) {
+            console.error('Error getting active AI plan:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Get a specific AI plan by ID
+     */
+    async getById(planId) {
+        try {
+            const response = await client.request(
+                readItems('planes_ia', {
+                    filter: { id: { _eq: planId } },
+                    fields: [
+                        '*',
+                        'ejercicios.id',
+                        'ejercicios.ejercicio_id.*',
+                        'ejercicios.ejercicio_id.imagen_referencia.*',
+                        'ejercicios.ejercicio_id.video_referencia.*',
+                        'ejercicios.ejercicio_id.imagen_url_1',
+                        'ejercicios.ejercicio_id.imagen_url_2',
+                        'ejercicios.dia',
+                        'ejercicios.orden',
+                        'ejercicios.series',
+                        'ejercicios.repeticiones',
+                        'ejercicios.duracion_minutos',
+                        'ejercicios.notas'
+                    ],
+                    limit: 1
+                })
+            );
+            return response?.[0] || null;
+        } catch (error) {
+            console.error('Error getting AI plan by ID:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Update an AI plan (metadata only, not exercises)
+     */
+    async update(planId, planData) {
+        try {
+            const response = await client.request(
+                updateItem('planes_ia', planId, {
+                    nombre: planData.nombre,
+                    descripcion: planData.descripcion,
+                    objetivo: planData.objetivo,
+                    nivel_experiencia: planData.nivel_experiencia,
+                    duracion_tipo: planData.duracion_tipo,
+                    dias_semana: planData.dias_semana,
+                    equipamiento: planData.equipamiento,
+                    limitaciones: planData.limitaciones,
+                    activo: planData.activo
+                })
+            );
+            return response;
+        } catch (error) {
+            console.error('Error updating AI plan:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Deactivate a plan (soft delete)
+     */
+    async deactivate(planId) {
+        try {
+            const response = await client.request(
+                updateItem('planes_ia', planId, { activo: false })
+            );
+            return response;
+        } catch (error) {
+            console.error('Error deactivating AI plan:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Delete all exercises of a plan and create new ones
+     * Useful for regenerating a plan
+     */
+    async replaceExercises(planId, nuevosEjercicios) {
+        try {
+            // Get existing exercises
+            const existing = await client.request(
+                readItems('ejercicios_plan_ia', {
+                    filter: { plan_ia_id: { _eq: planId } }
+                })
+            );
+
+            // Delete existing exercises
+            for (const ej of existing || []) {
+                await client.request(
+                    deleteItem('ejercicios_plan_ia', ej.id)
+                );
+            }
+
+            // Create new exercises
+            for (const ejercicio of nuevosEjercicios) {
+                await client.request(
+                    createItem('ejercicios_plan_ia', {
+                        plan_ia_id: planId,
+                        ejercicio_id: ejercicio.ejercicio_id,
+                        dia: ejercicio.dia || 1,
+                        orden: ejercicio.orden,
+                        series: ejercicio.series,
+                        repeticiones: ejercicio.repeticiones,
+                        duracion_minutos: ejercicio.duracion_minutos,
+                        notas: ejercicio.notas
+                    })
+                );
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error replacing exercises:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Regenerate a plan with new preferences
+     * Deactivates the old plan and creates a new one
+     */
+    async regenerate(oldPlanId, newPlanData, ejercicios) {
+        try {
+            // Deactivate old plan
+            await this.deactivate(oldPlanId);
+
+            // Create new plan
+            const newPlan = await this.create(newPlanData, ejercicios);
+
+            return newPlan;
+        } catch (error) {
+            console.error('Error regenerating plan:', error);
+            throw error;
+        }
+    }
+};
