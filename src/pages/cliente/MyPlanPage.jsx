@@ -94,18 +94,22 @@ const MyPlanPage = () => {
 
     // Get exercises based on plan type
     const ejercicios = planType === 'ia'
-        ? (activePlan.ejercicios || []).map(ej => ({
-            ...ej,
-            ejercicio_id: ej.ejercicio_id,
-            // Map the junction table fields
-            id: ej.id,
-            series: ej.series,
-            repeticiones: ej.repeticiones,
-            duracion_minutos: ej.duracion_minutos,
-            notas: ej.notas,
-            dia: ej.dia,
-            orden: ej.orden
-        }))
+        ? (activePlan.ejercicios || []).map(ej => {
+            console.log('[MyPlanPage] IA Exercise item:', ej);
+            console.log('[MyPlanPage] ejercicio_id:', ej.ejercicio_id);
+            return {
+                ...ej,
+                ejercicio_id: ej.ejercicio_id,
+                // Map the junction table fields
+                id: ej.id,
+                series: ej.series,
+                repeticiones: ej.repeticiones,
+                duracion_minutos: ej.duracion_minutos,
+                notas: ej.notas,
+                dia: ej.dia,
+                orden: ej.orden
+            };
+        })
         : (activePlan?.ejercicios || []);
 
     const totalExercises = ejercicios.length;
@@ -126,8 +130,8 @@ const MyPlanPage = () => {
                             setPlanType('trainer');
                         }}
                         className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${planType === 'trainer'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-dark-700 text-gray-400 hover:text-white'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-dark-700 text-gray-400 hover:text-white'
                             }`}
                     >
                         👨‍🏫 Plan con Profesor
@@ -138,8 +142,8 @@ const MyPlanPage = () => {
                             setPlanType('ia');
                         }}
                         className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${planType === 'ia'
-                                ? 'bg-purple-600 text-white'
-                                : 'bg-dark-700 text-gray-400 hover:text-white'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-dark-700 text-gray-400 hover:text-white'
                             }`}
                     >
                         🤖 Plan IA
@@ -157,8 +161,8 @@ const MyPlanPage = () => {
                         <div className="flex items-center gap-2 mb-2">
                             <h2 className="text-2xl md:text-3xl font-bold">{activePlan.nombre}</h2>
                             <span className={`badge text-xs ${planType === 'ia'
-                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                                    : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                                : 'bg-blue-500/20 text-blue-300 border-blue-500/30'
                                 }`}>
                                 {planType === 'ia' ? 'Generado por IA' : 'Plan Entrenador'}
                             </span>
