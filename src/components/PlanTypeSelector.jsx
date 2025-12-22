@@ -11,6 +11,11 @@ const PlanTypeSelector = () => {
     const [error, setError] = useState(null);
 
     const handleSelectTrainer = async () => {
+        if (!user?.profile?.id) {
+            setError('Error: Perfil de usuario no disponible. Por favor recarga la página.');
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
@@ -32,6 +37,11 @@ const PlanTypeSelector = () => {
     };
 
     const handleChangePlanType = async () => {
+        if (!user?.profile?.id) {
+            setError('Error: Perfil de usuario no disponible. Por favor recarga la página.');
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
@@ -82,7 +92,7 @@ const PlanTypeSelector = () => {
                             </button>
                             <button
                                 onClick={handleChangePlanType}
-                                disabled={loading}
+                                disabled={loading || !user?.profile?.id}
                                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-xl transition-colors disabled:opacity-50"
                             >
                                 {loading ? 'Cambiando...' : 'Cambiar a Plan IA'}
@@ -147,7 +157,7 @@ const PlanTypeSelector = () => {
 
                             <button
                                 onClick={handleSelectTrainer}
-                                disabled={loading}
+                                disabled={loading || !user?.profile?.id}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-xl transition-all disabled:opacity-50"
                             >
                                 {loading ? 'Guardando...' : 'Solicitar Asignación de Entrenador'}
