@@ -6,7 +6,7 @@ import Card from './Card';
 
 const PlanTypeSelector = () => {
     const navigate = useNavigate();
-    const { user, updateUserProfile } = useAuth();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -18,15 +18,11 @@ const PlanTypeSelector = () => {
             // Update preference in database
             await authService.updatePlanPreference(user.profile.id, 'profesor');
 
-            // Update local user context
-            await updateUserProfile();
-
             // Reload to show waiting state
             window.location.reload();
         } catch (err) {
             console.error('Error updating plan preference:', err);
             setError('Error al guardar tu preferencia. Por favor intenta nuevamente.');
-        } finally {
             setLoading(false);
         }
     };
@@ -43,15 +39,11 @@ const PlanTypeSelector = () => {
             // Reset preference
             await authService.updatePlanPreference(user.profile.id, null);
 
-            // Update local user context
-            await updateUserProfile();
-
             // Reload to show selection again
             window.location.reload();
         } catch (err) {
             console.error('Error resetting plan preference:', err);
             setError('Error al cambiar tu preferencia. Por favor intenta nuevamente.');
-        } finally {
             setLoading(false);
         }
     };
