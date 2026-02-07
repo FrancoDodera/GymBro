@@ -57,6 +57,14 @@ export const AuthProvider = ({ children }) => {
                     } catch (e) {
                         console.warn('[checkAuth] Could not load entrenador profile');
                     }
+                } else if (roleName === 'Gimnasio') {
+                    try {
+                        const { gimnasioService } = await import('../api/directus');
+                        const prof = await gimnasioService.getMyGimnasio(currentUser.id);
+                        setProfile(prof);
+                    } catch (e) {
+                        console.warn('[checkAuth] Could not load gimnasio profile');
+                    }
                 }
             }
         } catch (error) {
@@ -111,6 +119,10 @@ export const AuthProvider = ({ children }) => {
                     const { entrenadorService } = await import('../api/directus');
                     const prof = await entrenadorService.getMyProfile(currentUser.id);
                     setProfile(prof);
+                } else if (role === 'Gimnasio') {
+                    const { gimnasioService } = await import('../api/directus');
+                    const prof = await gimnasioService.getMyGimnasio(currentUser.id);
+                    setProfile(prof);
                 }
             }
         } catch (error) {
@@ -127,9 +139,12 @@ export const AuthProvider = ({ children }) => {
         logout,
         refreshUser,
         isAuthenticated: !!user,
-        isAdmin: role === 'Administrator',
+        isSuperAdmin: role === 'SuperAdmin',
+        isGimnasio: role === 'Gimnasio',
         isEntrenador: role === 'Entrenador',
-        isCliente: role === 'Cliente'
+        isCliente: role === 'Cliente',
+        // Deprecated - mantener para compatibilidad
+        isAdmin: role === 'Administrator' || role === 'SuperAdmin'
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

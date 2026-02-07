@@ -3,19 +3,27 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const BottomNav = () => {
-    const { isAdmin, isEntrenador, isCliente, isAuthenticated } = useAuth();
+    const { isSuperAdmin, isGimnasio, isEntrenador, isCliente, isAuthenticated } = useAuth();
     const location = useLocation();
 
     if (!isAuthenticated) return null;
 
     // Define navigation items based on role
     const getNavItems = () => {
-        if (isAdmin) {
+        if (isSuperAdmin) {
             return [
-                { path: '/admin', icon: '🏠', label: 'Inicio' },
-                { path: '/admin/trainers', icon: '🏋️', label: 'Trainers' },
-                { path: '/admin/clients', icon: '👥', label: 'Clientes' },
-                { path: '/admin/plans', icon: '📋', label: 'Planes' },
+                { path: '/superadmin', icon: '🏠', label: 'Inicio' },
+                { path: '/superadmin/gimnasios', icon: '🏢', label: 'Gimnasios' },
+                { path: '/superadmin/stats', icon: '📊', label: 'Stats' },
+                { path: '/profile', icon: '👤', label: 'Perfil' },
+            ];
+        }
+        if (isGimnasio) {
+            return [
+                { path: '/gimnasio', icon: '🏠', label: 'Inicio' },
+                { path: '/gimnasio/trainers', icon: '🏋️', label: 'Trainers' },
+                { path: '/gimnasio/clients', icon: '👥', label: 'Clientes' },
+                { path: '/gimnasio/plans', icon: '📋', label: 'Planes' },
                 { path: '/profile', icon: '👤', label: 'Perfil' },
             ];
         }
@@ -44,7 +52,7 @@ const BottomNav = () => {
 
     const isActive = (path) => {
         // Exact match for home paths, startsWith for others
-        if (path === '/admin' || path === '/entrenador' || path === '/cliente') {
+        if (path === '/superadmin' || path === '/gimnasio' || path === '/entrenador' || path === '/cliente') {
             return location.pathname === path;
         }
         return location.pathname.startsWith(path);
@@ -60,8 +68,8 @@ const BottomNav = () => {
                             key={item.path}
                             to={item.path}
                             className={`flex flex-col items-center justify-center flex-1 h-full py-2 transition-all ${active
-                                    ? 'text-primary-400'
-                                    : 'text-gray-500 hover:text-gray-300'
+                                ? 'text-primary-400'
+                                : 'text-gray-500 hover:text-gray-300'
                                 }`}
                         >
                             <span className={`text-xl mb-0.5 ${active ? 'scale-110' : ''} transition-transform`}>

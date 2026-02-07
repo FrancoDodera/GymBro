@@ -8,6 +8,9 @@ import InstallButton from './components/InstallButton';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
+import GimnasiosManager from './pages/superadmin/GimnasiosManager';
+import GlobalStats from './pages/superadmin/GlobalStats';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import TrainersManager from './pages/admin/TrainersManager';
 import AdminClientesManager from './pages/admin/AdminClientesManager';
@@ -58,7 +61,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
 // Main Router Component
 const Router = () => {
-    const { isAuthenticated, isAdmin, isEntrenador, isCliente, loading, role } = useAuth();
+    const { isAuthenticated, isSuperAdmin, isGimnasio, isEntrenador, isCliente, loading, role } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -67,8 +70,10 @@ const Router = () => {
         if (!loading && isAuthenticated && location.pathname === '/') {
             console.log('[App] Redirecting user with role:', role);
 
-            if (role === 'Administrator') {
-                navigate('/admin', { replace: true });
+            if (role === 'SuperAdmin') {
+                navigate('/superadmin', { replace: true });
+            } else if (role === 'Gimnasio') {
+                navigate('/gimnasio', { replace: true });
             } else if (role === 'Entrenador') {
                 navigate('/entrenador', { replace: true });
             } else if (role === 'Cliente') {
@@ -124,39 +129,71 @@ const Router = () => {
                     }
                 />
 
-                {/* Admin Routes */}
+                {/* SuperAdmin Routes */}
                 <Route
-                    path="/admin"
+                    path="/superadmin"
                     element={
-                        <ProtectedRoute allowedRoles={['admin', 'administrator']}>
+                        <ProtectedRoute allowedRoles={['superadmin']}>
+                            <SuperAdminDashboard />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/superadmin/gimnasios"
+                    element={
+                        <ProtectedRoute allowedRoles={['superadmin']}>
+                            <GimnasiosManager />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/superadmin/stats"
+                    element={
+                        <ProtectedRoute allowedRoles={['superadmin']}>
+                            <GlobalStats />
+                        </ProtectedRoute>
+                    }
+                />
+
+                {/* Gimnasio Routes (previously Admin) */}
+                <Route
+                    path="/gimnasio"
+                    element={
+                        <ProtectedRoute allowedRoles={['gimnasio']}>
                             <AdminDashboard />
                         </ProtectedRoute>
                     }
                 />
                 <Route
-                    path="/admin/trainers"
+                    path="/gimnasio/trainers"
                     element={
-                        <ProtectedRoute allowedRoles={['admin', 'administrator']}>
+                        <ProtectedRoute allowedRoles={['gimnasio']}>
                             <TrainersManager />
                         </ProtectedRoute>
                     }
                 />
                 <Route
-                    path="/admin/clients"
+                    path="/gimnasio/clients"
                     element={
-                        <ProtectedRoute allowedRoles={['admin', 'administrator']}>
+                        <ProtectedRoute allowedRoles={['gimnasio']}>
                             <AdminClientesManager />
                         </ProtectedRoute>
                     }
                 />
                 <Route
-                    path="/admin/plans"
+                    path="/gimnasio/plans"
                     element={
-                        <ProtectedRoute allowedRoles={['admin', 'administrator']}>
+                        <ProtectedRoute allowedRoles={['gimnasio']}>
                             <AdminPlanesManager />
                         </ProtectedRoute>
                     }
                 />
+
+                {/* Legacy Admin Routes - redirect to Gimnasio */}
+                <Route path="/admin" element={<Navigate to="/gimnasio" replace />} />
+                <Route path="/admin/trainers" element={<Navigate to="/gimnasio/trainers" replace />} />
+                <Route path="/admin/clients" element={<Navigate to="/gimnasio/clients" replace />} />
+                <Route path="/admin/plans" element={<Navigate to="/gimnasio/plans" replace />} />
 
                 {/* Entrenador Routes */}
                 <Route

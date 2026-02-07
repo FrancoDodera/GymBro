@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import Avatar from './Avatar';
 
 const Navbar = () => {
-    const { user, role, logout, isAdmin, isEntrenador, isCliente } = useAuth();
+    const { user, role, logout, isSuperAdmin, isGimnasio, isEntrenador, isCliente } = useAuth();
 
     return (
         <nav className="navbar">
@@ -16,18 +16,32 @@ const Navbar = () => {
                         </Link>
 
                         <div className="hidden md:flex items-center gap-4">
-                            {isAdmin && (
+                            {isSuperAdmin && (
                                 <>
-                                    <Link to="/admin" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                    <Link to="/superadmin" className="text-gray-300 hover:text-primary-500 transition-colors">
                                         Dashboard
                                     </Link>
-                                    <Link to="/admin/trainers" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                    <Link to="/superadmin/gimnasios" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                        Gimnasios
+                                    </Link>
+                                    <Link to="/superadmin/stats" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                        Estadísticas
+                                    </Link>
+                                </>
+                            )}
+
+                            {isGimnasio && (
+                                <>
+                                    <Link to="/gimnasio" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                        Dashboard
+                                    </Link>
+                                    <Link to="/gimnasio/trainers" className="text-gray-300 hover:text-primary-500 transition-colors">
                                         Entrenadores
                                     </Link>
-                                    <Link to="/admin/clients" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                    <Link to="/gimnasio/clients" className="text-gray-300 hover:text-primary-500 transition-colors">
                                         Clientes
                                     </Link>
-                                    <Link to="/admin/plans" className="text-gray-300 hover:text-primary-500 transition-colors">
+                                    <Link to="/gimnasio/plans" className="text-gray-300 hover:text-primary-500 transition-colors">
                                         Planes
                                     </Link>
                                 </>

@@ -1,4 +1,4 @@
-import { createDirectus, rest, authentication, readMe, readItems, createItem, updateItem, deleteItem } from '@directus/sdk';
+import { createDirectus, rest, authentication, readMe, readItems, createItem, updateItem, deleteItem, createUser } from '@directus/sdk';
 
 const directusUrl = import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8055';
 
@@ -23,16 +23,16 @@ export default client;
 // ============================================
 // ROLE ID MAPPING - Hardcoded Directus Role IDs
 // ============================================
-// NOTE: These are PRODUCTION IDs from Render Directus
+// NOTE: Multi-tenant architecture role IDs
 const ROLE_IDS = {
-    ADMIN: '131bc633-08d9-4754-8527-92d20ad0ed31',
-    CLIENTE: '13dac638-166e-4639-a9f6-e68746209968',
-    ENTRENADOR: '1c1eb5b7-bfb0-4a0d-a595-faba8babbcd0'
+    SUPER_ADMIN: '2389cb78-3351-4a18-8721-000bffea4605',  // Super Admin (plataforma)
+    GIMNASIO: 'a3e1b914-5d5f-4339-978b-2319b1452349',     // Gimnasio (admin del gimnasio)
+    ENTRENADOR: '4192d542-2329-4a72-bbc9-d0ba3d5b2f21',   // Entrenador
+    CLIENTE: 'cdece3c6-5da4-4fed-88c1-bf379b9be80c'       // Cliente
 };
 
 // Map Role ID to Role Name
-// LOGIC: If role is undefined, user is a Cliente (can't read their own role field)
-//        If role is defined, use the mapping for Admin/Entrenador
+// LOGIC: Multi-tenant role detection
 function getRoleFromId(roleId) {
     console.log('[getRoleFromId] Checking roleId:', roleId);
 
@@ -44,9 +44,12 @@ function getRoleFromId(roleId) {
 
     // Map known role IDs
     switch (roleId) {
-        case ROLE_IDS.ADMIN:
-            console.log('[getRoleFromId] Matched Administrator');
-            return 'Administrator';
+        case ROLE_IDS.SUPER_ADMIN:
+            console.log('[getRoleFromId] Matched SuperAdmin');
+            return 'SuperAdmin';
+        case ROLE_IDS.GIMNASIO:
+            console.log('[getRoleFromId] Matched Gimnasio');
+            return 'Gimnasio';
         case ROLE_IDS.ENTRENADOR:
             console.log('[getRoleFromId] Matched Entrenador');
             return 'Entrenador';
@@ -81,6 +84,17 @@ async function getUserProfile(userId, role) {
             );
             return entrenadores?.[0] || null;
         }
+        if (role === 'Gimnasio') {
+            const gimnasios = await client.request(
+                readItems('gimnasios', {
+                    filter: { user_id: { _eq: userId } },
+                    fields: ['*'],
+                    limit: 1
+                })
+            );
+            return gimnasios?.[0] || null;
+        }
+        // SuperAdmin doesn't have a profile table
         return null;
     } catch (error) {
         console.log('[getUserProfile] Could not fetch profile (may be permission issue):', error.message);
@@ -383,14 +397,6 @@ export const clienteService = {
             // Hardcoded Cliente role ID (avoids needing permission to read roles)
             const clienteRoleId = ROLE_IDS.CLIENTE;
 
-            console.log('[clienteService.create] Creating user with data:', {
-                email: data.email,
-                first_name: data.first_name,
-                last_name: data.last_name,
-                role: clienteRoleId,
-                entrenador_asignado: data.entrenador_asignado
-            });
-
             // Use REST API directly for creating users (core collection)
             const authData = storage.get();
             const response = await fetch(`${directusUrl}/users`, {
@@ -410,15 +416,12 @@ export const clienteService = {
             });
 
             const responseData = await response.json();
-            console.log('[clienteService.create] User creation response:', responseData);
 
             if (!response.ok) {
                 throw new Error(responseData.errors?.[0]?.message || 'Error creating user');
             }
 
             const userId = responseData.data.id;
-            console.log('[clienteService.create] User created with ID:', userId);
-            console.log('[clienteService.create] User role assigned:', responseData.data.role);
 
             // Then create the cliente record
             const clienteResponse = await client.request(
@@ -430,7 +433,6 @@ export const clienteService = {
                 })
             );
 
-            console.log('[clienteService.create] Cliente record created:', clienteResponse);
             return clienteResponse;
         } catch (error) {
             console.error('Error creating cliente:', error);
@@ -900,25 +902,71 @@ export const adminService = {
 
     async getTrainers() {
         try {
+            // Get current user's gimnasio_id
+            const currentUser = await authService.getCurrentUser();
+
+            const gimnasios = await client.request(
+                readItems('gimnasios', {
+                    filter: { user_id: { _eq: currentUser.id } },
+                    fields: ['id'],
+                    limit: 1
+                })
+            );
+
+            const gimnasioId = gimnasios?.[0]?.id;
+            if (!gimnasioId) {
+                console.error('[adminService.getTrainers] No gimnasio_id found for current user');
+                return [];
+            }
+
+            // Get trainers filtered by gimnasio_id
             const response = await client.request(
                 readItems('entrenadores', {
+                    filter: { gimnasio_id: { _eq: gimnasioId } },
                     fields: ['*', 'user_id.id', 'user_id.email', 'user_id.first_name', 'user_id.last_name', 'user_id.status', 'user_id.avatar']
                 })
             );
+
             return response || [];
         } catch (error) {
-            console.error('Error getting trainers:', error);
+            console.error('[adminService.getTrainers] Error getting trainers:', error);
             return [];
         }
     },
 
     async getTrainersWithClientCount() {
         try {
+            console.log('[adminService.getTrainersWithClientCount] Starting...');
+
+            // Get current user's gimnasio_id
+            const currentUser = await authService.getCurrentUser();
+            console.log('[adminService.getTrainersWithClientCount] Current user:', currentUser.id);
+
+            const gimnasios = await client.request(
+                readItems('gimnasios', {
+                    filter: { user_id: { _eq: currentUser.id } },
+                    fields: ['id'],
+                    limit: 1
+                })
+            );
+
+            const gimnasioId = gimnasios?.[0]?.id;
+            console.log('[adminService.getTrainersWithClientCount] Gimnasio ID:', gimnasioId);
+
+            if (!gimnasioId) {
+                console.error('[adminService.getTrainersWithClientCount] No gimnasio_id found');
+                return [];
+            }
+
+            // Get trainers filtered by gimnasio_id
             const trainers = await client.request(
                 readItems('entrenadores', {
+                    filter: { gimnasio_id: { _eq: gimnasioId } },
                     fields: ['*', 'user_id.id', 'user_id.email', 'user_id.first_name', 'user_id.last_name', 'user_id.status', 'user_id.avatar']
                 })
             );
+
+            console.log('[adminService.getTrainersWithClientCount] Trainers found:', trainers?.length);
 
             // Get all clients to count per trainer
             const clients = await client.request(readItems('clientes'));
@@ -929,9 +977,10 @@ export const adminService = {
                 return { ...trainer, clientCount };
             });
 
+            console.log('[adminService.getTrainersWithClientCount] Returning trainers with count:', trainersWithCount.length);
             return trainersWithCount;
         } catch (error) {
-            console.error('Error getting trainers with client count:', error);
+            console.error('[adminService.getTrainersWithClientCount] Error:', error);
             return [];
         }
     },
@@ -947,44 +996,95 @@ export const adminService = {
                 role: entrenadorRoleId
             });
 
-            // Create user via REST API
-            const authData = storage.get();
-            const response = await fetch(`${directusUrl}/users`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authData.access_token}`
-                },
-                body: JSON.stringify({
-                    email: data.email,
-                    password: data.password,
-                    first_name: data.first_name,
-                    last_name: data.last_name,
-                    role: entrenadorRoleId,
-                    status: 'active'
-                })
-            });
+            // Get current user's gimnasio_id by querying the gimnasios table
+            const currentUser = await authService.getCurrentUser();
+            let gimnasioId = null;
 
-            const responseData = await response.json();
-            console.log('[adminService.createTrainer] User creation response:', responseData);
-
-            if (!response.ok) {
-                throw new Error(responseData.errors?.[0]?.message || 'Error creating user');
-            }
-
-            const userId = responseData.data.id;
-
-            // Create entrenador record
-            const entrenadorResponse = await client.request(
-                createItem('entrenadores', {
-                    user_id: userId,
-                    especialidad: data.especialidad || null,
-                    descripcion: data.descripcion || null
+            // Query gimnasios table to get the gimnasio associated with current user
+            const gimnasios = await client.request(
+                readItems('gimnasios', {
+                    filter: { user_id: { _eq: currentUser.id } },
+                    fields: ['id'],
+                    limit: 1
                 })
             );
 
-            console.log('[adminService.createTrainer] Entrenador record created:', entrenadorResponse);
-            return entrenadorResponse;
+            if (gimnasios && gimnasios.length > 0) {
+                gimnasioId = gimnasios[0].id;
+            }
+
+            if (!gimnasioId) {
+                throw new Error('No se pudo obtener el ID del gimnasio. Asegúrate de estar logueado como Gimnasio.');
+            }
+
+            console.log('[adminService.createTrainer] Using gimnasio_id:', gimnasioId);
+
+            // Create user using Directus SDK
+            try {
+                const userResponse = await client.request(
+                    createUser({
+                        email: data.email,
+                        password: data.password,
+                        first_name: data.first_name,
+                        last_name: data.last_name,
+                        role: entrenadorRoleId,
+                        status: 'active'
+                    })
+                );
+
+                console.log('[adminService.createTrainer] User created successfully (204 No Content)');
+
+                // Add a small delay to ensure the user is indexed
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Query ALL users that we can see (permissions allow Gimnasio to see Entrenador users)
+                const authData = storage.get();
+                const usersResponse = await fetch(`${directusUrl}/users?limit=200`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authData.access_token}`
+                    }
+                });
+
+                let userId = null;
+
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    console.log('[adminService.createTrainer] Fetched users count:', usersData.data?.length);
+
+                    // Find the user by exact email match
+                    if (usersData.data && usersData.data.length > 0) {
+                        const foundUser = usersData.data.find(u => u.email?.toLowerCase() === data.email.toLowerCase());
+                        if (foundUser) {
+                            userId = foundUser.id;
+                            console.log('[adminService.createTrainer] Found user ID:', userId);
+                        } else {
+                            console.log('[adminService.createTrainer] User not found. Available emails:',
+                                usersData.data.map(u => u.email).join(', '));
+                        }
+                    }
+                }
+
+                if (!userId) {
+                    throw new Error(`No se pudo obtener el ID del usuario creado con email ${data.email}. Verifica que el usuario fue creado correctamente en Directus.`);
+                }
+
+                // Create entrenador record with gimnasio_id
+                const entrenadorResponse = await client.request(
+                    createItem('entrenadores', {
+                        user_id: userId,
+                        gimnasio_id: gimnasioId,
+                        especialidad: data.especialidad || null,
+                        descripcion: data.descripcion || null
+                    })
+                );
+
+                console.log('[adminService.createTrainer] Entrenador record created:', entrenadorResponse);
+                return entrenadorResponse;
+            } catch (userCreationError) {
+                console.error('Error in user/entrenador creation:', userCreationError);
+                throw userCreationError;
+            }
         } catch (error) {
             console.error('Error creating trainer:', error);
             throw error;
@@ -1035,6 +1135,49 @@ export const adminService = {
             return true;
         } catch (error) {
             console.error('Error deleting trainer:', error);
+            throw error;
+        }
+    },
+
+    async updateTrainer(entrenadorId, userId, data) {
+        try {
+            // Update entrenador record (especialidad, descripcion)
+            if (data.especialidad !== undefined || data.descripcion !== undefined) {
+                await client.request(
+                    updateItem('entrenadores', entrenadorId, {
+                        especialidad: data.especialidad,
+                        descripcion: data.descripcion
+                    })
+                );
+            }
+
+            // Update user record (first_name, last_name, email) via REST API
+            if (data.first_name || data.last_name || data.email) {
+                const authData = storage.get();
+                const userUpdates = {};
+
+                if (data.first_name) userUpdates.first_name = data.first_name;
+                if (data.last_name) userUpdates.last_name = data.last_name;
+                if (data.email) userUpdates.email = data.email;
+
+                const response = await fetch(`${directusUrl}/users/${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authData.access_token}`
+                    },
+                    body: JSON.stringify(userUpdates)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.errors?.[0]?.message || 'Failed to update user');
+                }
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error updating trainer:', error);
             throw error;
         }
     },
@@ -1638,6 +1781,199 @@ export const planesIAService = {
             return newPlan;
         } catch (error) {
             console.error('Error regenerating plan:', error);
+            throw error;
+        }
+    }
+};
+
+// ============================================
+// Gimnasio Service - Multi-tenant Gimnasio Management
+// ============================================
+export const gimnasioService = {
+    async getAll() {
+        try {
+            const response = await client.request(
+                readItems('gimnasios', {
+                    fields: ['*', 'user_id.id', 'user_id.first_name', 'user_id.last_name', 'user_id.email'],
+                    sort: ['-fecha_registro']
+                })
+            );
+            return response || [];
+        } catch (error) {
+            console.error('Error getting all gimnasios:', error);
+            return [];
+        }
+    },
+
+    async getMyGimnasio(userId) {
+        try {
+            const response = await client.request(
+                readItems('gimnasios', {
+                    filter: { user_id: { _eq: userId } },
+                    fields: ['*'],
+                    limit: 1
+                })
+            );
+            return response?.[0] || null;
+        } catch (error) {
+            console.error('Error getting my gimnasio:', error);
+            return null;
+        }
+    },
+
+    async getById(gimnasioId) {
+        try {
+            const response = await client.request(
+                readItems('gimnasios', {
+                    filter: { id: { _eq: gimnasioId } },
+                    fields: ['*', 'user_id.first_name', 'user_id.last_name', 'user_id.email'],
+                    limit: 1
+                })
+            );
+            return response?.[0] || null;
+        } catch (error) {
+            console.error('Error getting gimnasio by ID:', error);
+            return null;
+        }
+    },
+
+    async getEntrenadores(gimnasioId) {
+        try {
+            const response = await client.request(
+                readItems('entrenadores', {
+                    filter: { gimnasio_id: { _eq: gimnasioId } },
+                    fields: ['*', 'user_id.id', 'user_id.first_name', 'user_id.last_name', 'user_id.email', 'user_id.status']
+                })
+            );
+            return response || [];
+        } catch (error) {
+            console.error('Error getting entrenadores for gimnasio:', error);
+            return [];
+        }
+    },
+
+    async getClientes(gimnasioId) {
+        try {
+            const entrenadores = await this.getEntrenadores(gimnasioId);
+            const entrenadorIds = entrenadores.map(e => e.id);
+            if (entrenadorIds.length === 0) return [];
+
+            const response = await client.request(
+                readItems('clientes', {
+                    filter: { entrenador_asignado: { _in: entrenadorIds } },
+                    fields: ['*', 'user_id.*', 'entrenador_asignado.id', 'entrenador_asignado.user_id.first_name', 'entrenador_asignado.user_id.last_name']
+                })
+            );
+            return response || [];
+        } catch (error) {
+            console.error('Error getting clientes for gimnasio:', error);
+            return [];
+        }
+    },
+
+    async update(gimnasioId, data) {
+        try {
+            return await client.request(updateItem('gimnasios', gimnasioId, data));
+        } catch (error) {
+            console.error('Error updating gimnasio:', error);
+            throw error;
+        }
+    },
+
+    async create(data) {
+        try {
+            return await client.request(createItem('gimnasios', data));
+        } catch (error) {
+            console.error('Error creating gimnasio:', error);
+            throw error;
+        }
+    },
+
+    async toggleStatus(gimnasioId, activo) {
+        try {
+            return await client.request(updateItem('gimnasios', gimnasioId, { activo }));
+        } catch (error) {
+            console.error('Error toggling gimnasio status:', error);
+            throw error;
+        }
+    },
+
+    async getStats(gimnasioId) {
+        try {
+            const [entrenadores, clientes] = await Promise.all([
+                this.getEntrenadores(gimnasioId),
+                this.getClientes(gimnasioId)
+            ]);
+            return {
+                totalEntrenadores: entrenadores.length,
+                totalClientes: clientes.length,
+                entrenadoresActivos: entrenadores.filter(e => e.user_id?.status === 'active').length,
+                clientesActivos: clientes.filter(c => c.user_id?.status === 'active').length
+            };
+        } catch (error) {
+            console.error('Error getting gimnasio stats:', error);
+            return { totalEntrenadores: 0, totalClientes: 0, entrenadoresActivos: 0, clientesActivos: 0 };
+        }
+    },
+
+    async create(gimnasioData) {
+        try {
+            // First create the user for the gimnasio
+            const userData = {
+                first_name: gimnasioData.nombre,
+                last_name: 'Admin',
+                email: gimnasioData.email,
+                password: gimnasioData.password,
+                role: ROLE_IDS.GIMNASIO,
+                status: 'active'
+            };
+
+            const userResponse = await client.request(createUser(userData));
+
+            if (!userResponse?.id) {
+                throw new Error('Failed to create user for gimnasio');
+            }
+
+            // Then create the gimnasio entry
+            const gimnasio = {
+                nombre: gimnasioData.nombre,
+                email: gimnasioData.email,
+                user_id: userResponse.id,
+                descripcion: gimnasioData.descripcion || '',
+                direccion: gimnasioData.direccion || '',
+                telefono: gimnasioData.telefono || null,
+                activo: true,
+                configuracion: {}
+            };
+
+            const response = await client.request(createItem('gimnasios', gimnasio));
+            return response;
+        } catch (error) {
+            console.error('Error creating gimnasio:', error);
+            throw error;
+        }
+    },
+
+    async update(gimnasioId, data) {
+        try {
+            const response = await client.request(
+                updateItem('gimnasios', gimnasioId, data)
+            );
+            return response;
+        } catch (error) {
+            console.error('Error updating gimnasio:', error);
+            throw error;
+        }
+    },
+
+    async toggleStatus(gimnasioId, newStatus) {
+        try {
+            const response = await client.request(
+                updateItem('gimnasios', gimnasioId, { activo: newStatus })
+            );
+            return response;
+        } catch (error) {
+            console.error('Error toggling gimnasio status:', error);
             throw error;
         }
     }

@@ -9,8 +9,10 @@ const TrainersManager = () => {
     const [trainers, setTrainers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [trainerToDelete, setTrainerToDelete] = useState(null);
+    const [trainerToEdit, setTrainerToEdit] = useState(null);
 
     // Form state for creating trainer
     const [newTrainer, setNewTrainer] = useState({
@@ -22,6 +24,16 @@ const TrainersManager = () => {
         descripcion: ''
     });
     const [creating, setCreating] = useState(false);
+    const [updating, setUpdating] = useState(false);
+
+    // Form state for editing trainer
+    const [editTrainer, setEditTrainer] = useState({
+        first_name: '',
+        last_name: '',
+        email: '',
+        especialidad: '',
+        descripcion: ''
+    });
 
     useEffect(() => {
         loadTrainers();
@@ -85,6 +97,40 @@ const TrainersManager = () => {
         } catch (error) {
             console.error('Error deleting trainer:', error);
             alert('Error al eliminar el entrenador. Asegúrate de que no tenga clientes asignados.');
+        }
+    };
+
+    const handleEditClick = (trainer) => {
+        setTrainerToEdit(trainer);
+        setEditTrainer({
+            first_name: trainer.user_id?.first_name || '',
+            last_name: trainer.user_id?.last_name || '',
+            email: trainer.user_id?.email || '',
+            especialidad: trainer.especialidad || '',
+            descripcion: trainer.descripcion || ''
+        });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateTrainer = async (e) => {
+        e.preventDefault();
+        if (!trainerToEdit) return;
+
+        setUpdating(true);
+        try {
+            await adminService.updateTrainer(
+                trainerToEdit.id,
+                trainerToEdit.user_id?.id,
+                editTrainer
+            );
+            setShowEditModal(false);
+            setTrainerToEdit(null);
+            loadTrainers();
+        } catch (error) {
+            console.error('Error updating trainer:', error);
+            alert('Error al actualizar el entrenador. Verifica que el email no esté en uso.');
+        } finally {
+            setUpdating(false);
         }
     };
 
@@ -214,6 +260,12 @@ const TrainersManager = () => {
 
                                     <div className="mt-auto space-y-2">
                                         <button
+                                            onClick={() => handleEditClick(trainer)}
+                                            className="w-full btn bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 text-sm"
+                                        >
+                                            Editar
+                                        </button>
+                                        <button
                                             onClick={() => handleToggleStatus(trainer)}
                                             className={`w-full btn text-sm ${isActive
                                                 ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
@@ -333,6 +385,90 @@ const TrainersManager = () => {
                             disabled={creating}
                         >
                             {creating ? 'Creando...' : 'Crear Entrenador'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Edit Trainer Modal */}
+            <Modal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                title="Editar Entrenador"
+            >
+                <form onSubmit={handleUpdateTrainer}>
+                    <div className="space-y-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="label">Nombre</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={editTrainer.first_name}
+                                    onChange={(e) => setEditTrainer({ ...editTrainer, first_name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Apellido</label>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    value={editTrainer.last_name}
+                                    onChange={(e) => setEditTrainer({ ...editTrainer, last_name: e.target.value })}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="label">Email</label>
+                            <input
+                                type="email"
+                                className="input"
+                                value={editTrainer.email}
+                                onChange={(e) => setEditTrainer({ ...editTrainer, email: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div>
+                            <label className="label">Especialidad (Opcional)</label>
+                            <input
+                                type="text"
+                                className="input"
+                                value={editTrainer.especialidad}
+                                onChange={(e) => setEditTrainer({ ...editTrainer, especialidad: e.target.value })}
+                                placeholder="Ej: Crossfit, Musculación, Funcional..."
+                            />
+                        </div>
+
+                        <div>
+                            <label className="label">Descripción (Opcional)</label>
+                            <textarea
+                                className="input min-h-[80px] resize-none"
+                                value={editTrainer.descripcion}
+                                onChange={(e) => setEditTrainer({ ...editTrainer, descripcion: e.target.value })}
+                                placeholder="Breve descripción del entrenador..."
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4 border-t border-dark-700">
+                        <button
+                            type="button"
+                            onClick={() => setShowEditModal(false)}
+                            className="btn btn-secondary"
+                            disabled={updating}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={updating}
+                        >
+                            {updating ? 'Actualizando...' : 'Guardar Cambios'}
                         </button>
                     </div>
                 </form>
